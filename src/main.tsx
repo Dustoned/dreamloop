@@ -4,6 +4,7 @@ import { Engine } from './engine/engine';
 import { store } from './state/paramStore';
 import { buildDefaultState } from './state/defaults';
 import { consumePhoto } from './capture/screenshot';
+import { audio } from './audio/audioEngine';
 import { installShortcuts, installAutoHide } from './ui/shortcuts';
 import { App } from './app';
 import './styles/app.css';
@@ -22,9 +23,14 @@ try {
 if (glc) {
   const engine = new Engine(glc, () => store.state);
   if (import.meta.env.DEV) {
-    const w = window as unknown as { __engine?: Engine; __store?: typeof store };
+    const w = window as unknown as {
+      __engine?: Engine;
+      __store?: typeof store;
+      __audio?: typeof audio;
+    };
     w.__engine = engine;
     w.__store = store;
+    w.__audio = audio;
   }
 
   // In dev, keep rendering (via setTimeout) even when the page reports hidden,
@@ -34,7 +40,9 @@ if (glc) {
     if (import.meta.env.DEV && document.hidden) setTimeout(cb, 33);
     else requestAnimationFrame(cb);
   };
+  engine.audio = audio.frame;
   const frame = (): void => {
+    audio.update();
     engine.render(performance.now());
     consumePhoto(canvas);
     schedule(frame);

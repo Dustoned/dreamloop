@@ -6,6 +6,8 @@ import { useStructure } from './hooks/useParam';
 import { AutoControl } from './controls/AutoControl';
 import { PalettePicker } from './PalettePicker';
 import { ScenePicker } from './ScenePicker';
+import { AudioPanel } from './AudioPanel';
+import { AudioAmountSlider } from './MacroSlider';
 
 export function Section({ title, children }: { title: string; children: ComponentChildren }) {
   return (
@@ -83,6 +85,11 @@ export function AdvancedPanel() {
 
       <Section title={T.colors}>
         <PalettePicker />
+      </Section>
+
+      <Section title="Audio">
+        <AudioPanel />
+        <AudioAmountSlider label={T.audioReact} />
       </Section>
     </div>
   );

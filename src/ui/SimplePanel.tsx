@@ -3,6 +3,7 @@ import { requestPhoto } from '../capture/screenshot';
 import { MacroSlider, AudioAmountSlider } from './MacroSlider';
 import { PalettePicker } from './PalettePicker';
 import { ScenePicker } from './ScenePicker';
+import { AudioPanel } from './AudioPanel';
 import { doSurprise, toggleFullscreen } from './shortcuts';
 
 export function SimplePanel() {
@@ -15,6 +16,7 @@ export function SimplePanel() {
         <MacroSlider id="complexity" label={T.complexity} />
         <AudioAmountSlider label={T.audioReact} />
       </div>
+      <AudioPanel compact />
       <PalettePicker compact />
       <button class="surprise-btn" onClick={doSurprise}>
         ✨ {T.surpriseMe}
