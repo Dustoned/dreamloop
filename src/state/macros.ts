@@ -33,6 +33,26 @@ const SCENE_COMPLEXITY: Record<string, Target[]> = {
     { path: 'scene.stars.layers', map: (m) => Math.round(lerp(3, 8, m)) },
   ],
   geometry: [{ path: 'scene.geometry.gdensity', map: (m) => lerp(1.2, 3.5, m) }],
+  cells: [
+    { path: 'scene.cells.cellsize', map: (m) => lerp(2.4, 0.7, m) },
+    { path: 'scene.cells.move', map: (m) => lerp(0.3, 1.6, m) },
+  ],
+  tissue: [
+    { path: 'scene.tissue.feed', map: (m) => lerp(0.03, 0.075, m) },
+    { path: 'scene.tissue.stir', map: (m) => lerp(0.1, 0.8, m) },
+  ],
+  wormhole: [
+    { path: 'scene.wormhole.worganic', map: (m) => lerp(0.1, 1, m) },
+    { path: 'scene.wormhole.wglow', map: (m) => lerp(0.2, 0.9, m) },
+  ],
+  fractalcore: [
+    { path: 'scene.fractalcore.fiter2', map: (m) => Math.round(lerp(4, 9, m)) },
+    { path: 'scene.fractalcore.fwarp', map: (m) => lerp(0.1, 0.9, m) },
+  ],
+  nebula: [
+    { path: 'scene.nebula.ndetail', map: (m) => Math.round(lerp(2, 5, m)) },
+    { path: 'scene.nebula.ndensity', map: (m) => lerp(0.5, 1.35, m) },
+  ],
 };
 
 const INTENSITY: Target[] = [

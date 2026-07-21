@@ -165,9 +165,59 @@ export const BUILTIN_PRESETS: BuiltinPreset[] = [
     },
   },
   {
+    id: 'wormhole-ride',
+    name: 'Wormhole Ride',
+    icon: '🌪️',
+    state: {
+      scene: 'wormhole',
+      palette: { preset: 'neon', stops: ['#0a0014', '#ff00cc', '#00ffee', '#faff00'] },
+      effects: fx({ echo: true, glow: true }),
+      params: {
+        'scene.wormhole.wfly': 1.3,
+        'scene.wormhole.worganic': 0.7,
+        'fx.echo.persist': 0.6,
+        'fx.echo.fzoom': 0.5,
+        'fx.glow.bintensity': 0.9,
+      },
+    },
+  },
+  {
+    id: 'hyperspace',
+    name: 'Hyperspace',
+    icon: '💠',
+    state: {
+      scene: 'fractalcore',
+      palette: { preset: 'ice', stops: ['#eaf8ff', '#8fd8ff', '#2a6fd8', '#0a2560'] },
+      effects: fx({ echo: true, prism: true }),
+      params: {
+        'scene.fractalcore.ffly': 0.9,
+        'scene.fractalcore.fwarp': 0.6,
+        'fx.prism.pstrength': 0.4,
+        'fx.echo.persist': 0.55,
+        'fx.echo.fblend': 1,
+      },
+    },
+  },
+  {
+    id: 'deep-nebula',
+    name: 'Deep Nebula',
+    icon: '🌌',
+    state: {
+      scene: 'nebula',
+      palette: { preset: 'sunset', stops: ['#2d1b69', '#e91e8c', '#ff6b35', '#ffd23f'] },
+      effects: fx({ echo: true, glow: true }),
+      params: {
+        'global.speed': 0.8,
+        'scene.nebula.ndensity': 1.1,
+        'fx.glow.bintensity': 0.7,
+        'fx.echo.persist': 0.5,
+      },
+    },
+  },
+  {
     id: 'aurora-sky',
     name: 'Aurora',
-    icon: '🌌',
+    icon: '🌠',
     state: {
       scene: 'mandala',
       palette: { preset: 'aurora', stops: ['#02102a', '#00c896', '#7a3fe0', '#8ef0d2'] },

@@ -50,6 +50,28 @@ mat2 rot2(float a) {
   return mat2(c, -s, s, c);
 }
 
+/** Cheap 3D value noise: two 2D slices blended along z. */
+float vnoise3(vec3 p) {
+  float zi = floor(p.z);
+  float zf = p.z - zi;
+  zf = zf * zf * (3.0 - 2.0 * zf);
+  float a = vnoise(p.xy + hash11(zi) * 57.31);
+  float b = vnoise(p.xy + hash11(zi + 1.0) * 57.31);
+  return mix(a, b, zf);
+}
+
+float fbm3(vec3 p, int oct) {
+  float v = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 6; i++) {
+    if (i >= oct) break;
+    v += amp * vnoise3(p);
+    p = vec3(mat2(1.6, 1.2, -1.2, 1.6) * p.xy, p.z * 2.1 + 7.7);
+    amp *= 0.5;
+  }
+  return v;
+}
+
 /** Palette lookup; texture wraps, so t can be any float. */
 vec3 pal(float t) {
   return texture(u_palette, vec2(t, 0.5)).rgb;

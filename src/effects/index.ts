@@ -11,6 +11,9 @@ import geometryFrag from './scenes/geometry.frag?raw';
 import cellsFrag from './scenes/cells.frag?raw';
 import tissueSimFrag from './scenes/tissue_sim.frag?raw';
 import tissueViewFrag from './scenes/tissue_view.frag?raw';
+import wormholeFrag from './scenes/wormhole.frag?raw';
+import fractalcoreFrag from './scenes/fractalcore.frag?raw';
+import nebulaFrag from './scenes/nebula.frag?raw';
 import echoFrag from './post/echo.frag?raw';
 import huecycleFrag from './post/huecycle.frag?raw';
 import finalFrag from './post/final.frag?raw';
@@ -104,10 +107,55 @@ export const EFFECTS: EffectDef[] = [
     cost: 1,
     params: [
       { type: 'slider', id: 'segments', label: 'Segments', min: 3, max: 24, step: 1, default: 8, surprise: [5, 16] },
-      { type: 'slider', id: 'rotspeed', label: 'Rotation', min: -1, max: 1, step: 0.01, default: 0.15, surprise: [-0.5, 0.5] },
-      { type: 'slider', id: 'suck', label: 'Pull', min: -1, max: 1, step: 0.01, default: 0.35, surprise: [-0.8, 0.8] },
+      { type: 'slider', id: 'rotspeed', label: 'Rotation', min: -1, max: 1, step: 0.01, default: 0.2, surprise: [-0.6, 0.6] },
+      { type: 'slider', id: 'suck', label: 'Fly Through', min: -1, max: 1, step: 0.01, default: 0.5, surprise: [-0.9, 0.9] },
       { type: 'slider', id: 'detail', label: 'Detail', min: 1, max: 5, step: 1, default: 3, surprise: [2, 5] },
-      { type: 'slider', id: 'rings', label: 'Rings', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0, 1] },
+      { type: 'slider', id: 'mglow', label: 'Glow', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.9] },
+    ],
+  },
+  {
+    id: 'wormhole',
+    name: 'Wormhole',
+    kind: 'scene',
+    icon: '🌪️',
+    frag: wormholeFrag,
+    cost: 3,
+    params: [
+      { type: 'slider', id: 'wfly', label: 'Fly Speed', min: 0, max: 3, step: 0.01, default: 1, surprise: [0.4, 2] },
+      { type: 'slider', id: 'wradius', label: 'Width', min: 0.6, max: 2, step: 0.01, default: 1.1, surprise: [0.8, 1.6] },
+      { type: 'slider', id: 'worganic', label: 'Organic Walls', min: 0, max: 1, step: 0.01, default: 0.55, surprise: [0.2, 1] },
+      { type: 'slider', id: 'wglow', label: 'Haze', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.9] },
+      { type: 'slider', id: 'wbank', label: 'Camera Roll', min: 0, max: 1, step: 0.01, default: 0.5 },
+    ],
+  },
+  {
+    id: 'fractalcore',
+    name: 'Fractal Core',
+    kind: 'scene',
+    icon: '💠',
+    frag: fractalcoreFrag,
+    cost: 3,
+    params: [
+      { type: 'slider', id: 'ffly', label: 'Fly Speed', min: 0, max: 2, step: 0.01, default: 0.55, surprise: [0.2, 1.2] },
+      { type: 'slider', id: 'ffold', label: 'Structure', min: 1.5, max: 2.5, step: 0.005, default: 1.9, surprise: [1.6, 2.3] },
+      { type: 'slider', id: 'fwarp', label: 'Morph', min: 0, max: 1, step: 0.01, default: 0.45, surprise: [0.1, 0.9] },
+      { type: 'slider', id: 'fglow', label: 'Energy Glow', min: 0, max: 1, step: 0.01, default: 0.6, surprise: [0.3, 1] },
+      { type: 'slider', id: 'fiter2', label: 'Iterations', min: 4, max: 9, step: 1, default: 7, surprise: [5, 8] },
+    ],
+  },
+  {
+    id: 'nebula',
+    name: 'Nebula',
+    kind: 'scene',
+    icon: '🌌',
+    frag: nebulaFrag,
+    cost: 3,
+    params: [
+      { type: 'slider', id: 'ndrift', label: 'Drift', min: 0, max: 2, step: 0.01, default: 0.6, surprise: [0.2, 1.3] },
+      { type: 'slider', id: 'ndensity', label: 'Gas Density', min: 0.3, max: 1.5, step: 0.01, default: 0.8, surprise: [0.5, 1.3] },
+      { type: 'slider', id: 'ndetail', label: 'Detail', min: 2, max: 5, step: 1, default: 4 },
+      { type: 'slider', id: 'nstars', label: 'Stars', min: 0, max: 1, step: 0.01, default: 0.6 },
+      { type: 'slider', id: 'ncontrast', label: 'Contrast', min: 0.5, max: 2, step: 0.01, default: 1.15 },
     ],
   },
   {

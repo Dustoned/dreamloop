@@ -13,6 +13,9 @@ const THUMB_GRADIENTS: Record<string, string> = {
   geometry: 'conic-gradient(from 30deg, #ffd23f, #ff6b35, #ffd23f, #ff6b35, #ffd23f, #ff6b35, #ffd23f)',
   cells: 'radial-gradient(circle at 30% 40%, #b8f2d9 8%, #2a6fd8 30%, #0a1030 70%)',
   tissue: 'radial-gradient(circle at 55% 45%, #ff6a00 5%, #8f0f00 40%, #0d0000 80%)',
+  wormhole: 'radial-gradient(circle at 50% 50%, #0a0014 8%, #7a3fe0 35%, #ff5fd0 60%, #12082a 90%)',
+  fractalcore: 'conic-gradient(from 45deg, #00ffee, #0a0014, #ff00cc, #0a0014, #00ffee, #0a0014, #ff00cc, #0a0014, #00ffee)',
+  nebula: 'radial-gradient(ellipse at 35% 40%, #e91e8c 0%, #7a3fe0 30%, #02102a 75%)',
 };
 
 export function ScenePicker() {
