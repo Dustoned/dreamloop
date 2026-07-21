@@ -3,6 +3,8 @@ import { GlContext } from './engine/gl';
 import { Engine } from './engine/engine';
 import { store } from './state/paramStore';
 import { buildDefaultState } from './state/defaults';
+import { consumePhoto } from './capture/screenshot';
+import { installShortcuts, installAutoHide } from './ui/shortcuts';
 import { App } from './app';
 import './styles/app.css';
 
@@ -34,6 +36,7 @@ if (glc) {
   };
   const frame = (): void => {
     engine.render(performance.now());
+    consumePhoto(canvas);
     schedule(frame);
   };
   schedule(frame);
@@ -41,4 +44,6 @@ if (glc) {
   document.body.classList.add('no-webgl');
 }
 
+installShortcuts();
+installAutoHide();
 render(<App />, document.getElementById('app')!);

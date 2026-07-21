@@ -3,7 +3,7 @@ import { paletteCss } from '../palette/gradientTexture';
 import { store } from '../state/paramStore';
 import { useStructure } from './hooks/useParam';
 
-export function PalettePicker() {
+export function PalettePicker({ compact = false }: { compact?: boolean }) {
   useStructure();
   const pal = store.state.palette;
 
@@ -50,6 +50,7 @@ export function PalettePicker() {
           />
         ))}
       </div>
+      {!compact && (
       <div class="palette-custom">
         <div class="palette-preview" style={{ background: paletteCss(pal.stops) }} />
         <div class="palette-stops">
@@ -74,6 +75,7 @@ export function PalettePicker() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

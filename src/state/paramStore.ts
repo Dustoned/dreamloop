@@ -47,6 +47,23 @@ class ParamStore {
     return () => this.structureListeners.delete(fn);
   }
 
+  /** Notify listeners of an arbitrary pseudo-path (e.g. "macro.speed"). */
+  notify(path: string): void {
+    const ls = this.keyListeners.get(path);
+    if (ls) for (const fn of ls) fn();
+  }
+
+  /** High-frequency macro updates bypass the coarse structure channel. */
+  setMacro(id: keyof ParamState['macros'], v: number): void {
+    this.state.macros[id] = v;
+    this.notify(`macro.${id}`);
+  }
+
+  setAudioAmount(v: number): void {
+    this.state.audio.amount = v;
+    this.notify('audio.amount');
+  }
+
   /** Mutate non-param state (scene, effects, palette, macros, audio) + coarse notify. */
   mutate(fn: (s: ParamState) => void): void {
     fn(this.state);
