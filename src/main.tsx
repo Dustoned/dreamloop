@@ -5,9 +5,11 @@ import { store } from './state/paramStore';
 import { buildDefaultState, hydrate } from './state/defaults';
 import { codeFromHash, decodeCode } from './state/urlCodec';
 import { loadSession, saveSession } from './state/userPresets';
+import { PerfMonitor } from './engine/perf';
 import { consumePhoto } from './capture/screenshot';
 import { audio } from './audio/audioEngine';
 import { installShortcuts, installAutoHide } from './ui/shortcuts';
+import { showToast } from './ui/Toast';
 import { App } from './app';
 import './styles/app.css';
 
@@ -22,6 +24,9 @@ if (hashCode) {
 } else {
   const sess = loadSession();
   if (sess) store.applySnapshot(hydrate(sess));
+  else if (window.matchMedia('(max-width: 719px)').matches) {
+    store.set('global.quality', 0.6);
+  }
 }
 
 // Debounced session autosave: your own creation greets you on the next visit.
@@ -64,15 +69,32 @@ if (glc) {
     else requestAnimationFrame(cb);
   };
   engine.audio = audio.frame;
+  const perf = new PerfMonitor();
+  let lastFrame = 0;
   const frame = (): void => {
+    const now = performance.now();
     audio.update();
-    engine.render(performance.now());
+    engine.render(now);
     consumePhoto(canvas);
+    if (!document.hidden && lastFrame > 0) {
+      perf.sample(now - lastFrame, now);
+      engine.degradeScale = perf.degrade;
+      if (perf.justDegraded) {
+        perf.justDegraded = false;
+        showToast('Quality lowered a bit to keep things smooth.');
+      }
+    }
+    lastFrame = now;
     schedule(frame);
   };
   schedule(frame);
 } else {
   document.body.classList.add('no-webgl');
+  const msg = document.createElement('div');
+  msg.className = 'no-webgl-msg';
+  msg.textContent =
+    "Your browser doesn't support WebGL2, which Dreamloop needs for its visuals. Try Chrome, Edge or Firefox on a computer or a recent phone.";
+  document.body.appendChild(msg);
 }
 
 installShortcuts();

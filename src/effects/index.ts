@@ -8,6 +8,9 @@ import kaliFrag from './scenes/kali.frag?raw';
 import interferenceFrag from './scenes/interference.frag?raw';
 import starsFrag from './scenes/stars.frag?raw';
 import geometryFrag from './scenes/geometry.frag?raw';
+import cellsFrag from './scenes/cells.frag?raw';
+import tissueSimFrag from './scenes/tissue_sim.frag?raw';
+import tissueViewFrag from './scenes/tissue_view.frag?raw';
 import echoFrag from './post/echo.frag?raw';
 import huecycleFrag from './post/huecycle.frag?raw';
 import finalFrag from './post/final.frag?raw';
@@ -23,6 +26,7 @@ export const COMMON_GLSL = commonGlsl;
 export const FINAL_FRAG = finalFrag;
 export const BLOOM_BRIGHT_FRAG = bloomBrightFrag;
 export const BLOOM_BLUR_FRAG = bloomBlurFrag;
+export const TISSUE_SIM_FRAG = tissueSimFrag;
 
 /** Global (non-effect) params, shown at the top of the panel. Paths: "global.<id>". */
 export const GLOBAL_PARAMS: ParamDef[] = [
@@ -190,6 +194,38 @@ export const EFFECTS: EffectDef[] = [
       { type: 'slider', id: 'grot', label: 'Rotation', min: -1, max: 1, step: 0.01, default: 0.15, surprise: [-0.6, 0.6] },
       { type: 'slider', id: 'gpulse', label: 'Pulse', min: 0, max: 1, step: 0.01, default: 0.4 },
       { type: 'slider', id: 'gdensity', label: 'Density', min: 1, max: 4, step: 0.01, default: 2, curve: 'exp', surprise: [1.2, 3] },
+    ],
+  },
+  {
+    id: 'cells',
+    name: 'Organic Cells',
+    kind: 'scene',
+    icon: '🦠',
+    frag: cellsFrag,
+    cost: 2,
+    params: [
+      { type: 'slider', id: 'cellsize', label: 'Cell Size', min: 0.5, max: 3, step: 0.01, default: 1.2, curve: 'exp', surprise: [0.7, 2.2] },
+      { type: 'slider', id: 'move', label: 'Motion', min: 0, max: 2, step: 0.01, default: 0.8, surprise: [0.3, 1.5] },
+      { type: 'slider', id: 'edge', label: 'Membrane', min: 0, max: 0.3, step: 0.005, default: 0.08, surprise: [0.03, 0.2] },
+      { type: 'slider', id: 'smoothk', label: 'Fluidity', min: 0.01, max: 0.3, step: 0.005, default: 0.1 },
+      { type: 'slider', id: 'cpulse', label: 'Breathe', min: 0, max: 1, step: 0.01, default: 0.4 },
+    ],
+  },
+  {
+    id: 'tissue',
+    name: 'Living Tissue',
+    kind: 'scene',
+    icon: '🧬',
+    frag: tissueViewFrag,
+    cost: 2,
+    passes: 'sim',
+    params: [
+      { type: 'slider', id: 'feed', label: 'Feed', min: 0.02, max: 0.09, step: 0.001, default: 0.037, surprise: [0.028, 0.075] },
+      { type: 'slider', id: 'kill', label: 'Decay', min: 0.045, max: 0.07, step: 0.0005, default: 0.06, surprise: [0.052, 0.066] },
+      { type: 'slider', id: 'simspeed', label: 'Growth Speed', min: 1, max: 10, step: 1, default: 7 },
+      { type: 'slider', id: 'tscale', label: 'Zoom', min: 0.5, max: 2, step: 0.01, default: 1, curve: 'exp' },
+      { type: 'slider', id: 'relief', label: 'Relief', min: 0, max: 1, step: 0.01, default: 0.5 },
+      { type: 'slider', id: 'stir', label: 'Stir', min: 0, max: 1, step: 0.01, default: 0.3 },
     ],
   },
   {

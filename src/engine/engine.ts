@@ -2,7 +2,14 @@ import type { GlContext } from './gl';
 import { Program, buildPrelude } from './program';
 import { RenderTarget, PingPong } from './renderTarget';
 import { PaletteTexture } from '../palette/gradientTexture';
-import { BLOOM_BLUR_FRAG, BLOOM_BRIGHT_FRAG, COMMON_GLSL, FINAL_FRAG, effectById } from '../effects';
+import {
+  BLOOM_BLUR_FRAG,
+  BLOOM_BRIGHT_FRAG,
+  COMMON_GLSL,
+  FINAL_FRAG,
+  TISSUE_SIM_FRAG,
+  effectById,
+} from '../effects';
 import type { AudioFrame, EffectDef, ParamState, ParamValue } from '../state/types';
 
 function num(v: ParamValue | undefined, fallback: number): number {
@@ -29,6 +36,8 @@ export class Engine {
   private readonly feedback: PingPong;
   private readonly post: PingPong;
   private readonly bloomHalf: PingPong;
+  private sim: PingPong | null = null;
+  private simSeeded = false;
   private readonly palette: PaletteTexture;
   private paletteKey = '';
   private lastScene = '';
@@ -122,7 +131,8 @@ export class Engine {
     const st = this.getState();
 
     // Canvas backing store at CSS size × (capped) dpr.
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const mobile = Math.min(window.innerWidth, window.innerHeight) < 720;
+    const dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2);
     const cw = Math.max(2, Math.round(canvas.clientWidth * dpr));
     const ch = Math.max(2, Math.round(canvas.clientHeight * dpr));
     if (canvas.width !== cw || canvas.height !== ch) {
@@ -155,17 +165,20 @@ export class Engine {
     if (st.scene !== this.lastScene) {
       this.lastScene = st.scene;
       this.feedback.clear();
+      this.simSeeded = false;
     }
 
     // 1. Scene pass.
     const sceneDef = effectById(st.scene);
     if (!sceneDef) return;
     const sp = this.getProgram(sceneDef);
+    if (sceneDef.passes === 'sim') this.runSim(st, sceneDef.id);
     sp.use();
     this.sceneRT.bind();
     this.setStd(sp, iw, ih);
     this.uploadParams(sp, sceneDef, st, `scene.${sceneDef.id}.`);
     sp.bindTex('u_palette', this.palette.tex, 0);
+    if (this.sim && sceneDef.passes === 'sim') sp.bindTex('u_prev', this.sim.read.tex, 2);
     glc.drawFullscreen();
 
     // 2. Feedback pass (always runs to keep the graph shape constant).
@@ -209,6 +222,39 @@ export class Engine {
 
     this.renderFinal(st, current, cw, ch);
     this.frameIdx++;
+  }
+
+  /** Gray-Scott sim steps at fixed 512²/256², independent of screen resolution. */
+  private runSim(st: ParamState, sceneId: string): void {
+    const glc = this.glc;
+    const size = Math.min(window.innerWidth, window.innerHeight) < 720 ? 256 : 512;
+    if (!this.sim) this.sim = new PingPong(glc, size, size);
+    this.sim.resize(size, size);
+
+    const def = effectById(sceneId)!;
+    const prog = this.getAuxProgram('tissue:sim', TISSUE_SIM_FRAG);
+    prog.use();
+
+    if (!this.simSeeded) {
+      this.simSeeded = true;
+      this.sim.write.bind();
+      this.setStd(prog, size, size);
+      prog.set1f('u_seedMode', 1);
+      glc.drawFullscreen();
+      this.sim.swap();
+    }
+
+    const steps = Math.round((st.params[`scene.${sceneId}.simspeed`] as number) ?? 4);
+    for (let i = 0; i < steps; i++) {
+      prog.use();
+      this.sim.write.bind();
+      this.setStd(prog, size, size);
+      this.uploadParams(prog, def, st, `scene.${sceneId}.`);
+      prog.set1f('u_seedMode', 0);
+      prog.bindTex('u_prev', this.sim.read.tex, 2);
+      glc.drawFullscreen();
+      this.sim.swap();
+    }
   }
 
   /** Dual half-res Gaussian bloom: bright pass -> blur H -> blur V -> composite. */
