@@ -2,7 +2,7 @@ import type { GlContext } from './gl';
 import { Program, buildPrelude } from './program';
 import { RenderTarget, PingPong } from './renderTarget';
 import { PaletteTexture } from '../palette/gradientTexture';
-import { COMMON_GLSL, FINAL_FRAG, effectById } from '../effects';
+import { BLOOM_BLUR_FRAG, BLOOM_BRIGHT_FRAG, COMMON_GLSL, FINAL_FRAG, effectById } from '../effects';
 import type { AudioFrame, EffectDef, ParamState, ParamValue } from '../state/types';
 
 function num(v: ParamValue | undefined, fallback: number): number {
@@ -28,6 +28,7 @@ export class Engine {
   private readonly sceneRT: RenderTarget;
   private readonly feedback: PingPong;
   private readonly post: PingPong;
+  private readonly bloomHalf: PingPong;
   private readonly palette: PaletteTexture;
   private paletteKey = '';
   private lastScene = '';
@@ -49,7 +50,17 @@ export class Engine {
     this.sceneRT = new RenderTarget(glc, 2, 2);
     this.feedback = new PingPong(glc, 2, 2);
     this.post = new PingPong(glc, 2, 2);
+    this.bloomHalf = new PingPong(glc, 2, 2);
     this.palette = new PaletteTexture(glc);
+  }
+
+  private getAuxProgram(key: string, frag: string): Program {
+    let p = this.programs.get(key);
+    if (!p) {
+      p = new Program(this.glc, frag, this.prelude, key);
+      this.programs.set(key, p);
+    }
+    return p;
   }
 
   private getProgram(def: EffectDef): Program {
@@ -107,7 +118,6 @@ export class Engine {
 
   render(nowMs: number): void {
     const glc = this.glc;
-    const gl = glc.gl;
     const canvas = glc.canvas;
     const st = this.getState();
 
@@ -179,6 +189,12 @@ export class Engine {
       if (!e.on || e.id === 'echo' || e.id === 'finish') continue;
       const def = effectById(e.id);
       if (!def || def.kind !== 'post') continue;
+
+      if (def.passes === 'bloom') {
+        current = this.renderBloom(st, current, iw, ih);
+        continue;
+      }
+
       const p = this.getProgram(def);
       p.use();
       this.post.write.bind();
@@ -191,7 +207,58 @@ export class Engine {
       current = this.post.read;
     }
 
-    // 4. Final blit to the canvas (vignette/grain/dither + audio effects).
+    this.renderFinal(st, current, cw, ch);
+    this.frameIdx++;
+  }
+
+  /** Dual half-res Gaussian bloom: bright pass -> blur H -> blur V -> composite. */
+  private renderBloom(st: ParamState, src: RenderTarget, iw: number, ih: number): RenderTarget {
+    const glc = this.glc;
+    const def = effectById('glow')!;
+    const hw = Math.max(2, iw >> 1);
+    const hh = Math.max(2, ih >> 1);
+    this.bloomHalf.resize(hw, hh);
+    const radius = ((st.params['fx.glow.bradius'] as number) ?? 1.2) * 2;
+
+    const bright = this.getAuxProgram('glow:bright', BLOOM_BRIGHT_FRAG);
+    bright.use();
+    this.bloomHalf.write.bind();
+    this.setStd(bright, hw, hh);
+    this.uploadParams(bright, def, st, 'fx.glow.');
+    bright.bindTex('u_src', src.tex, 1);
+    glc.drawFullscreen();
+    this.bloomHalf.swap();
+
+    const blur = this.getAuxProgram('glow:blur', BLOOM_BLUR_FRAG);
+    for (const dir of [
+      [radius, 0],
+      [0, radius],
+    ]) {
+      blur.use();
+      this.bloomHalf.write.bind();
+      this.setStd(blur, hw, hh);
+      blur.set2f('u_dir', dir[0], dir[1]);
+      blur.bindTex('u_src', this.bloomHalf.read.tex, 1);
+      glc.drawFullscreen();
+      this.bloomHalf.swap();
+    }
+
+    const comp = this.getProgram(def);
+    comp.use();
+    this.post.write.bind();
+    this.setStd(comp, iw, ih);
+    this.uploadParams(comp, def, st, 'fx.glow.');
+    comp.bindTex('u_src', src.tex, 1);
+    comp.bindTex('u_bloom', this.bloomHalf.read.tex, 3);
+    glc.drawFullscreen();
+    this.post.swap();
+    return this.post.read;
+  }
+
+  private renderFinal(st: ParamState, current: RenderTarget, cw: number, ch: number): void {
+    const glc = this.glc;
+    const gl = glc.gl;
+    // Final blit to the canvas (vignette/grain/dither + audio effects).
     const finishDef = effectById('finish')!;
     const finishOn = st.effects.find((e) => e.id === 'finish')?.on ?? true;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -204,7 +271,5 @@ export class Engine {
     this.finalProg.set3f('u_audioFx', pulse, flash, sparkle);
     this.finalProg.bindTex('u_src', current.tex, 1);
     glc.drawFullscreen();
-
-    this.frameIdx++;
   }
 }

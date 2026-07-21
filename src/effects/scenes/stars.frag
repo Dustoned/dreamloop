@@ -1,0 +1,34 @@
+uniform float u_density;
+uniform float u_fly;
+uniform float u_twinkle;
+uniform float u_layers;
+uniform float u_starsize;
+
+void main() {
+  vec2 p = ctr(v_uv);
+  // faint drifting nebula behind the stars
+  vec3 col = pal(fbm(p * 2.0 + u_time * 0.02, 3) * 0.4 + 0.05) * 0.13;
+
+  int L = int(u_layers);
+  for (int i = 0; i < 8; i++) {
+    if (i >= L) break;
+    float fi = float(i);
+    float z = fract(u_time * u_fly * 0.06 + fi / float(L)); // 0 far -> 1 near
+    float scale = mix(20.0, 2.5, z);
+    vec2 q = p * scale + vec2(fi * 17.13, fi * 9.7);
+    vec2 cell = floor(q);
+    vec2 f = fract(q) - 0.5;
+    vec2 jitter = hash22(cell) - 0.5;
+    float d = length(f - jitter * 0.8);
+
+    float bright = smoothstep(0.07 * u_starsize * (z + 0.25), 0.0, d);
+    bright *= step(1.0 - u_density * 0.75, hash21(cell + 31.7));
+    float tw = 0.5 + 0.5 * sin(u_time * (2.0 + 4.0 * hash21(cell)) + hash21(cell) * TAU);
+    bright *= mix(1.0, tw, u_twinkle);
+    // fade at both depth ends so the wrap never pops
+    bright *= smoothstep(0.0, 0.2, z) * (0.3 + 0.7 * z);
+
+    col += pal(hash21(cell) + u_time * 0.02) * bright;
+  }
+  fragColor = vec4(col, 1.0);
+}
