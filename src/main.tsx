@@ -1,53 +1,44 @@
-// M0 bootstrap: hardcoded plasma straight to the canvas to validate the toolchain.
-// Replaced by the real engine + UI boot in M1/M2.
+import { render } from 'preact';
 import { GlContext } from './engine/gl';
-import { Program, buildPrelude } from './engine/program';
-import { PaletteTexture } from './palette/gradientTexture';
-import { PALETTES } from './palette/palettes';
-import commonGlsl from './effects/shared/common.glsl?raw';
-import plasmaFrag from './effects/scenes/plasma.frag?raw';
+import { Engine } from './engine/engine';
+import { store } from './state/paramStore';
+import { buildDefaultState } from './state/defaults';
+import { App } from './app';
 import './styles/app.css';
 
+store.init(buildDefaultState());
+
 const canvas = document.getElementById('gl') as HTMLCanvasElement;
-// preserveDrawingBuffer in dev so the canvas can be inspected headlessly.
-const glc = new GlContext(canvas, { preserveDrawingBuffer: import.meta.env.DEV });
-const prog = new Program(glc, plasmaFrag, buildPrelude(commonGlsl), 'plasma');
-const palette = new PaletteTexture(glc);
-palette.update(PALETTES.find((p) => p.id === 'neon')!.stops);
+let glc: GlContext | null = null;
+try {
+  // preserveDrawingBuffer in dev so the canvas can be inspected headlessly.
+  glc = new GlContext(canvas, { preserveDrawingBuffer: import.meta.env.DEV });
+} catch {
+  glc = null;
+}
 
-function resize(): void {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
-  const w = Math.round(canvas.clientWidth * dpr);
-  const h = Math.round(canvas.clientHeight * dpr);
-  if (canvas.width !== w || canvas.height !== h) {
-    canvas.width = w;
-    canvas.height = h;
+if (glc) {
+  const engine = new Engine(glc, () => store.state);
+  if (import.meta.env.DEV) {
+    const w = window as unknown as { __engine?: Engine; __store?: typeof store };
+    w.__engine = engine;
+    w.__store = store;
   }
-}
 
-const t0 = performance.now();
-function frame(): void {
-  resize();
-  const gl = glc.gl;
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.viewport(0, 0, canvas.width, canvas.height);
-  prog.use();
-  prog.set1f('u_time', (performance.now() - t0) / 1000);
-  prog.set2f('u_res', canvas.width, canvas.height);
-  prog.set1f('u_scale', 1.0);
-  prog.set1f('u_waves', 5);
-  prog.set1f('u_wiggle', 0.8);
-  prog.set1f('u_soft', 0.5);
-  prog.bindTex('u_palette', palette.tex, 0);
-  glc.drawFullscreen();
+  // In dev, keep rendering (via setTimeout) even when the page reports hidden,
+  // so headless verification works. In production a hidden page pauses; the
+  // queued rAF fires again as soon as the page becomes visible.
+  const schedule = (cb: () => void): void => {
+    if (import.meta.env.DEV && document.hidden) setTimeout(cb, 33);
+    else requestAnimationFrame(cb);
+  };
+  const frame = (): void => {
+    engine.render(performance.now());
+    schedule(frame);
+  };
   schedule(frame);
+} else {
+  document.body.classList.add('no-webgl');
 }
 
-// In dev, keep rendering (via setTimeout) even when the page reports hidden, so
-// headless verification works. In production a hidden page simply pauses; the
-// queued rAF fires again as soon as the page becomes visible.
-function schedule(cb: () => void): void {
-  if (import.meta.env.DEV && document.hidden) setTimeout(cb, 33);
-  else requestAnimationFrame(cb);
-}
-schedule(frame);
+render(<App />, document.getElementById('app')!);
