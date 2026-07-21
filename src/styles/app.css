@@ -254,6 +254,65 @@ input[type='color'] {
   cursor: pointer;
 }
 
+/* ---------- Scene picker ---------- */
+
+.scene-strip {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.scene-card {
+  flex: 0 0 auto;
+  width: 92px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--text-dim);
+}
+
+.scene-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 92px;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  font-size: 24px;
+  transition: transform 0.15s;
+}
+
+.scene-card:hover .scene-thumb {
+  transform: scale(1.05);
+}
+
+.scene-card.active .scene-thumb {
+  border-color: #fff;
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.scene-card.active {
+  color: var(--text);
+}
+
+.scene-emoji {
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
+}
+
+.scene-name {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ---------- Effects ---------- */
 
 .effect-card {

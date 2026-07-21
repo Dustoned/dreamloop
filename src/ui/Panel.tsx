@@ -5,6 +5,7 @@ import { store } from '../state/paramStore';
 import { useStructure } from './hooks/useParam';
 import { AutoControl } from './controls/AutoControl';
 import { PalettePicker } from './PalettePicker';
+import { ScenePicker } from './ScenePicker';
 
 function Section({ title, children }: { title: string; children: ComponentChildren }) {
   return (
@@ -72,6 +73,10 @@ export function Panel() {
         </button>
       </header>
 
+      <Section title="Scene">
+        <ScenePicker />
+      </Section>
+
       <Section title="Playback">
         {GLOBAL_PARAMS.map((p) => (
           <AutoControl key={p.id} path={`global.${p.id}`} def={p} />
@@ -79,7 +84,7 @@ export function Panel() {
       </Section>
 
       {sceneDef && (
-        <Section title={`Scene — ${sceneDef.name}`}>
+        <Section title={`${sceneDef.name} settings`}>
           {sceneDef.params.map((p) => (
             <AutoControl key={p.id} path={`scene.${sceneDef.id}.${p.id}`} def={p} />
           ))}
