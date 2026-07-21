@@ -1,6 +1,7 @@
 import { store } from '../state/paramStore';
 import { makeSurprise, snapshotState } from '../state/surprise';
 import { requestPhoto } from '../capture/screenshot';
+import { party } from '../party/partyMode';
 import { showToast } from './Toast';
 import { T } from '../i18n/en';
 
@@ -51,6 +52,10 @@ export function installShortcuts(): void {
         break;
       case 'KeyS':
         requestPhoto();
+        break;
+      case 'KeyP':
+        if (party.active) party.stop();
+        else party.start();
         break;
     }
   });

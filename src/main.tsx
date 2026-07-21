@@ -2,7 +2,9 @@ import { render } from 'preact';
 import { GlContext } from './engine/gl';
 import { Engine } from './engine/engine';
 import { store } from './state/paramStore';
-import { buildDefaultState } from './state/defaults';
+import { buildDefaultState, hydrate } from './state/defaults';
+import { codeFromHash, decodeCode } from './state/urlCodec';
+import { loadSession, saveSession } from './state/userPresets';
 import { consumePhoto } from './capture/screenshot';
 import { audio } from './audio/audioEngine';
 import { installShortcuts, installAutoHide } from './ui/shortcuts';
@@ -10,6 +12,27 @@ import { App } from './app';
 import './styles/app.css';
 
 store.init(buildDefaultState());
+
+// Boot priority: shared code in the URL > last session > defaults.
+const hashCode = codeFromHash();
+if (hashCode) {
+  void decodeCode(hashCode).then((st) => {
+    if (st) store.applySnapshot(st);
+  });
+} else {
+  const sess = loadSession();
+  if (sess) store.applySnapshot(hydrate(sess));
+}
+
+// Debounced session autosave: your own creation greets you on the next visit.
+let lastSaved = '';
+setInterval(() => {
+  const json = JSON.stringify(store.state);
+  if (json !== lastSaved) {
+    lastSaved = json;
+    saveSession(store.state);
+  }
+}, 3000);
 
 const canvas = document.getElementById('gl') as HTMLCanvasElement;
 let glc: GlContext | null = null;

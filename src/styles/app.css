@@ -706,6 +706,216 @@ body.panel-hidden .panel-pill {
   margin-top: 10px;
 }
 
+/* ---------- Presets ---------- */
+
+.preset-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 8px 0 6px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+}
+
+.preset-chip {
+  flex: 0 0 auto;
+  border: 1px solid var(--panel-border);
+  background: var(--card-bg);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.preset-chip:hover {
+  color: var(--text);
+}
+
+.preset-chip.user {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+}
+
+.preset-load {
+  border: none;
+  background: none;
+  color: inherit;
+  font-size: 12px;
+  padding: 7px 4px 7px 12px;
+  cursor: pointer;
+}
+
+.preset-del {
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  padding: 7px 10px 7px 4px;
+  cursor: pointer;
+}
+
+/* ---------- Dialog ---------- */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+}
+
+.dialog {
+  width: min(420px, calc(100vw - 32px));
+  background: var(--panel-bg);
+  backdrop-filter: blur(24px);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+}
+
+.dialog-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dialog h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.dialog-close {
+  border: none;
+  background: none;
+  color: var(--text-dim);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.dialog-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin: 6px 0 14px;
+  line-height: 1.4;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.dialog-btn {
+  flex: 1;
+  padding: 11px;
+  border: 1px solid var(--panel-border);
+  background: var(--card-bg);
+  color: var(--text);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.dialog-btn:disabled {
+  opacity: 0.4;
+}
+
+.dialog-sep {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin: 16px 0 8px;
+}
+
+.dialog-import {
+  display: flex;
+  gap: 8px;
+}
+
+.dialog-import input {
+  flex: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 13px;
+  outline: none;
+}
+
+.dialog-import input:focus {
+  border-color: var(--accent);
+}
+
+.dialog-import .dialog-btn {
+  flex: 0 0 auto;
+}
+
+/* ---------- Party mode ---------- */
+
+#dip {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  transition: opacity 0.25s;
+  pointer-events: none;
+  z-index: 90;
+}
+
+#dip.on {
+  opacity: 1;
+}
+
+body.party-active .panel,
+body.party-active .panel-pill,
+body.party-active .toasts {
+  display: none;
+}
+
+.party-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  cursor: pointer;
+}
+
+.party-exit-hint {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: var(--text-dim);
+  animation: hint-fade 4s forwards;
+}
+
+@keyframes hint-fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+body.party-active.ui-idle .party-exit-hint {
+  opacity: 0;
+}
+
+.party-start {
+  margin-top: 12px;
+}
+
 /* ---------- Dropzone ---------- */
 
 .dropzone {
