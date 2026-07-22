@@ -42,7 +42,9 @@ function ModPopover({ path, onClose }: { path: string; onClose: () => void }) {
     });
     force((n) => n + 1);
   };
-  const cur = mod ?? { src: 'bass' as AudioBand, amt: 0.5 };
+  // Matches the cap the registry enforces on built-in reactions: half the
+  // slider range on every beat is a lurch, not an accent.
+  const cur = mod ?? { src: 'bass' as AudioBand, amt: 0.3 };
   return (
     <div class="mod-popover" onClick={(e) => e.stopPropagation()}>
       <div class="mod-row">

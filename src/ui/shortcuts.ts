@@ -76,11 +76,27 @@ export function installAutoHide(): void {
   // the controls would then never fade again.
   const isHeld = (): boolean => heldSince > 0 && performance.now() - heldSince < 5000;
 
+  // Reasons to leave the controls up even though the pointer has gone still.
+  // Fading the panel out from under someone who is reading it is the single
+  // thing that made this feel unreliable: three seconds is less than it takes to
+  // read a row of labels, and the panel does not merely dim, it stops taking
+  // clicks entirely.
+  const busy = (): boolean => {
+    // No hover to bring it back with: on a touch screen the only way to recover
+    // is to tap the canvas, and that tap is then eaten by the wake.
+    if (matchMedia('(hover: none)').matches) return true;
+    const panel = document.querySelector('.panel');
+    if (panel && (panel.matches(':hover') || panel.contains(document.activeElement))) return true;
+    // A dialog is a deliberate stop-and-read moment.
+    return !!document.querySelector('.dialog-backdrop, .mod-popover');
+  };
+
   const hide = (): void => {
     if (!uiPrefs.autoHide) return;
-    // Still holding: check again shortly rather than giving up, otherwise a press
-    // whose release never arrives would keep the controls up forever.
-    if (isHeld()) {
+    // Still holding, or the user is in the middle of something: check again
+    // shortly rather than giving up, otherwise a press whose release never
+    // arrives would keep the controls up forever.
+    if (isHeld() || busy()) {
       timer = setTimeout(hide, 500);
       return;
     }
@@ -106,7 +122,12 @@ export function installAutoHide(): void {
   addEventListener('blur', release);
   addEventListener('keydown', wake);
   addEventListener('touchstart', wake, { passive: true });
+  addEventListener('touchmove', wake, { passive: true });
   addEventListener('wheel', wake, { passive: true });
+  // Scrolling a long tab is activity too; without this the panel faded away
+  // mid-scroll whenever the pointer itself happened not to move.
+  addEventListener('scroll', wake, { passive: true, capture: true });
+  addEventListener('focusin', wake);
 
   subscribeUi(wake); // re-arm when the delay or the toggle changes
   wake();

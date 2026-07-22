@@ -41,14 +41,38 @@ class AudioEngine {
   private beatCooldown = 0;
   private beatEnv = 0;
 
-  /** Where `raw` sits between this band's recent quiet and loud, as 0..1. */
-  private agc(w: { lo: number; hi: number }, raw: number): number {
-    // Jump to a new extreme at once, drift back over ~15 s, so a loud drop is
-    // registered instantly but a quiet passage does not get amplified into noise.
-    w.hi = raw > w.hi ? raw : w.hi + (raw - w.hi) * 0.0011;
-    w.lo = raw < w.lo ? raw : w.lo + (raw - w.lo) * 0.0011;
+  /** Seconds since the last analysis, so the window adapts in real time rather
+   * than in frames — otherwise a 144 Hz display adapts 2.4x faster than a 60 Hz one. */
+  private lastAt = 0;
+
+  /**
+   * Where `raw` sits between this band's recent quiet and loud, as 0..1.
+   *
+   * The floor is the subtle half. Every track begins in silence, so a floor that
+   * latched on the first quiet sample would sit at 0 for the whole song, and the
+   * normalisation would collapse back to raw/hi — which is the very pinning this
+   * exists to remove. So the floor ignores near-silence and climbs back roughly
+   * three times faster than the ceiling falls.
+   */
+  private agc(w: { lo: number; hi: number }, raw: number, dt: number): number {
+    const fall = 1 - Math.exp(-dt / 9); // ceiling forgets a peak over ~9 s
+    const rise = 1 - Math.exp(-dt / 3); // floor catches up over ~3 s
+    w.hi = raw > w.hi ? raw : w.hi + (raw - w.hi) * fall;
+    if (raw > 0.02) {
+      w.lo = raw < w.lo ? raw : w.lo + (raw - w.lo) * rise;
+    }
     if (w.hi < 0.02) return 0; // silence: nothing to normalise
     return Math.min(1, Math.max(0, (raw - w.lo) / Math.max(w.hi - w.lo, 0.06)));
+  }
+
+  /** A new source has its own loudness; the previous one's window would mis-scale it. */
+  private resetLevels(): void {
+    this.gain = { bass: { lo: 1, hi: 0 }, mid: { lo: 1, hi: 0 }, treble: { lo: 1, hi: 0 } };
+    this.sm = { bass: 0, mid: 0, treble: 0 };
+    this.beatAvg = 0;
+    this.beatEnv = 0;
+    this.beatCooldown = 0;
+    this.lastAt = 0;
   }
 
   subscribe(fn: () => void): () => void {
@@ -116,6 +140,7 @@ class AudioEngine {
       if (this.audioEl.src) URL.revokeObjectURL(this.audioEl.src);
       this.audioEl.src = URL.createObjectURL(file);
       this.connect(this.fileNode!, true);
+      this.resetLevels();
       await this.audioEl.play();
       this.kind = 'file';
       this.trackName = file.name;
@@ -135,6 +160,7 @@ class AudioEngine {
       this.stream = stream;
       // never route the mic to the speakers (feedback loop)
       this.connect(ctx.createMediaStreamSource(stream), false);
+      this.resetLevels();
       stream.getAudioTracks()[0]?.addEventListener('ended', () => this.stop());
       this.kind = 'mic';
       this.trackName = '';
@@ -162,6 +188,7 @@ class AudioEngine {
       this.stream = stream;
       // the shared tab already plays its own audio
       this.connect(ctx.createMediaStreamSource(stream), false);
+      this.resetLevels();
       stream.getAudioTracks()[0].addEventListener('ended', () => this.stop());
       this.kind = 'tab';
       this.trackName = '';
@@ -191,10 +218,7 @@ class AudioEngine {
     this.trackName = '';
     this.error = '';
     this.frame.bass = this.frame.mid = this.frame.treble = this.frame.beat = 0;
-    // The next source has its own loudness; carrying this one's window over would
-    // mis-scale its first few seconds.
-    this.gain = { bass: { lo: 1, hi: 0 }, mid: { lo: 1, hi: 0 }, treble: { lo: 1, hi: 0 } };
-    this.beatAvg = 0;
+    this.resetLevels();
     this.emit();
   }
 
@@ -224,9 +248,12 @@ class AudioEngine {
     // attack and slow release.
     const sm = (cur: number, raw: number) =>
       raw > cur ? cur + (raw - cur) * 0.55 : cur + (raw - cur) * 0.12;
-    this.sm.bass = sm(this.sm.bass, this.agc(this.gain.bass, rawBass));
-    this.sm.mid = sm(this.sm.mid, this.agc(this.gain.mid, rawMid));
-    this.sm.treble = sm(this.sm.treble, this.agc(this.gain.treble, rawTreble));
+    const now = performance.now() / 1000;
+    const dt = this.lastAt > 0 ? Math.min(0.25, Math.max(0.001, now - this.lastAt)) : 0.016;
+    this.lastAt = now;
+    this.sm.bass = sm(this.sm.bass, this.agc(this.gain.bass, rawBass, dt));
+    this.sm.mid = sm(this.sm.mid, this.agc(this.gain.mid, rawMid, dt));
+    this.sm.treble = sm(this.sm.treble, this.agc(this.gain.treble, rawTreble, dt));
     f.bass = this.sm.bass;
     f.mid = this.sm.mid;
     f.treble = this.sm.treble;

@@ -61,7 +61,7 @@ void main() {
     // from Hold.
     camDist = mix(farD, nearD, diveCycle(u_time * u_bspeed * 0.035));   // Zoom In
   } else if (u_bcam < 2.5) {
-    camDist = mix(farD, nearD, 0.5 - 0.5 * cos(u_time * u_bspeed * 0.18)); // Ping-Pong
+    camDist = mix(farD, nearD, 0.5 - 0.5 * cos(u_time * u_bspeed * 0.035 * PI)); // Ping-Pong
   }                                                                     // else Hold
   camDist = max(camDist, nearD);
 

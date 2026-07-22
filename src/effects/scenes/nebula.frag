@@ -14,16 +14,21 @@ uniform float u_ncontrast;
  * for every one of those samples. That was the whole reason this scene crawled.
  */
 float gas(vec3 p, int oct, float thresh) {
+  // Normalised by the total amplitude this octave count can reach, so the cloud
+  // threshold means the same thing at every Detail setting. Without it, 2 octaves
+  // top out at 0.75 and a low Gas Density renders a completely black screen.
+  float total = 1.0 - exp2(-float(oct));
+  float need = thresh * total;
   float v = 0.0;
   float amp = 0.5;
   for (int i = 0; i < 6; i++) {
     if (i >= oct) break;
     v += amp * vnoise3(p);
-    if (v + amp < thresh) return 0.0;
+    if (v + amp < need) return 0.0;
     p = vec3(mat2(1.6, 1.2, -1.2, 1.6) * p.xy, p.z * 2.1 + 7.7);
     amp *= 0.5;
   }
-  return v;
+  return v / max(total, 0.001);
 }
 
 // Volumetric flight through fbm gas clouds, stars behind.

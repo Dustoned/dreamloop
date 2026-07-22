@@ -32,11 +32,16 @@ export function Panel() {
   }
 
   // On phones the sheet height is driven by the drag/snap state; on desktop the
-  // rule below is simply not applied (see the media query in app.css).
-  const sheetStyle = { '--sheet-h': `${sheet.dragVh ?? SNAPS[sheet.snap]}vh` } as Record<
-    string,
-    string
-  >;
+  // panel sizes itself and must not get a height at all.
+  //
+  // This is set as a plain inline height rather than through a CSS custom
+  // property. With `height: var(--sheet-h)` plus a height transition, changing
+  // only the variable left the element at its old height — measured: tapping
+  // from the 58vh snap to the 90vh snap did nothing at all, so the third snap
+  // point silently didn't work. An inline length transitions correctly.
+  const peeking = sheet.snap === 0 && sheet.dragVh === null;
+  const sheetStyle =
+    sheet.active && !peeking ? { height: `${sheet.dragVh ?? SNAPS[sheet.snap]}vh` } : undefined;
 
   return (
     <div class={`panel snap-${sheet.snap} ${sheet.dragVh !== null ? 'dragging' : ''}`} style={sheetStyle}>

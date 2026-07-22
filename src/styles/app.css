@@ -300,9 +300,9 @@ body {
 
 /* A control that is a no-op in the current mode: dimmed, still usable, with the
    reason spelled out so it doesn't read as broken. */
-.ctl-inactive .ctl-label,
-.ctl-inactive .ctl-value,
-.ctl-inactive .slider-track {
+.ctl-inactive > .ctl-row > .ctl-label,
+.ctl-inactive > .ctl-row > .ctl-value,
+.ctl-inactive > .slider-track {
   opacity: 0.42;
 }
 
@@ -1249,8 +1249,9 @@ body.party-active.ui-idle .party-exit-hint {
     left: 0;
     bottom: 0;
     width: 100%;
-    /* Driven by the drag/snap state; peek keeps two thirds of the visual on screen. */
-    height: var(--sheet-h, 30vh);
+    /* Panel.tsx sets the live height inline from the drag/snap state; this is
+       only the value before the first render. */
+    height: 58vh;
     max-height: 92vh;
     border-radius: var(--radius) var(--radius) 0 0;
     border-bottom: none;

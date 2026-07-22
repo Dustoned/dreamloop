@@ -3,7 +3,7 @@ import { uiPrefs, setUiPref, subscribeUi } from './uiPrefs';
 import { Toggle } from './controls/Toggle';
 import { togglePanel } from './shortcuts';
 
-const DELAYS = [2, 3, 5, 10];
+const DELAYS = [4, 8, 15, 30];
 
 export function DisplaySettings() {
   const [, force] = useReducer<number, void>((c) => c + 1, 0);

@@ -15,6 +15,7 @@ uniform float u_spin;
 // stay exactly one pixel wide at any zoom -> no shimmer, no aliasing crawl.
 
 #define ZLIMIT 19.0    // fp32 dissolves past here; the mush fade below hides the rest
+#define CRISP 15.0     // past here fp32 detail dissolves; keep every dive below it
 #define VIEW 2.6       // world units across the short screen axis at depth 0
 #define BAIL 1024.0    // |z|^2 escape radius, wide enough for a clean smooth count
 
@@ -51,7 +52,9 @@ void main() {
   // clock instead used to clamp at the precision limit, so after a minute or two
   // Zoom In and Zoom Out simply stopped moving and never started again.
   float base = clamp(u_basezoom, 0.0, ZLIMIT);
-  float span = min(ZLIMIT - base, 13.0);   // 13 octaves ~ 8000x, still crisp in fp32
+  // Cap the PEAK, not the span: the dive runs base..base+span, so capping only the
+  // span let a high Start Depth push every cycle into the mush fade below.
+  float span = clamp(CRISP - base, 0.0, 13.0);
   float phase = u_time * u_zspeed * 0.25 / max(span, 0.001);
   float depth = base;
   if (u_zmode < 0.5) depth += span * diveCycle(phase);
@@ -177,7 +180,7 @@ void main() {
   col += pal(0.12 + t * 0.2 + u_time * 0.02) * glow * 0.16 * aud;
 
   // ---- fp32 breakup: melt into a low-frequency version instead of hash noise -
-  float mush = smoothstep(15.0, ZLIMIT, depth);
+  float mush = smoothstep(CRISP, ZLIMIT, depth);
   vec3 low = pal(t * 0.3 + 0.12 + u_time * 0.02)
            * (0.05 + 0.62 * sqrt(clamp(luma(col) * 1.5, 0.0, 1.0)));
   col = mix(col, low, mush * 0.85);

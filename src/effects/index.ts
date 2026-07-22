@@ -475,7 +475,7 @@ export const EFFECTS: EffectDef[] = [
         default: 0,
         surprise: true,
       },
-      { type: 'slider', id: 'bspeed', label: 'Camera Speed', min: 0, max: 2, step: 0.01, default: 0.6, surprise: [0.2, 1.3], activeWhen: { param: 'bcam', notEquals: 3, because: 'set Camera away from Hold' } },
+      { type: 'slider', id: 'bspeed', label: 'Camera Speed', min: 0, max: 2, step: 0.01, default: 0.6, surprise: [0.2, 1.3] },
       { type: 'slider', id: 'bdist', label: 'Distance', min: 1.4, max: 4, step: 0.01, default: 2.1, surprise: [1.6, 3] },
       { type: 'slider', id: 'biters', label: 'Detail', min: 4, max: 12, step: 1, default: 8, perfScale: true },
       { type: 'slider', id: 'bglow', label: 'Inner Glow', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.9] },

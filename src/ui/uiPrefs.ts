@@ -9,9 +9,13 @@ export interface UiPrefs {
   hidden: boolean;
 }
 
-const KEY = 'dreamloop.ui.v1';
+// v2: the default delay went from 3 s to 8 s. Three seconds is shorter than it
+// takes to read a row of labels, so the controls kept vanishing mid-thought.
+// Bumping the key is what lets everyone who never touched the setting get the
+// new default; it costs a one-time reset of the panel side and hidden flag.
+const KEY = 'dreamloop.ui.v2';
 
-const DEFAULTS: UiPrefs = { autoHide: true, hideDelay: 3, side: 'right', hidden: false };
+const DEFAULTS: UiPrefs = { autoHide: true, hideDelay: 8, side: 'right', hidden: false };
 
 function load(): UiPrefs {
   try {
@@ -20,7 +24,7 @@ function load(): UiPrefs {
     const p = JSON.parse(raw) as Partial<UiPrefs>;
     return {
       autoHide: p.autoHide !== false,
-      hideDelay: typeof p.hideDelay === 'number' ? Math.min(30, Math.max(1, p.hideDelay)) : 3,
+      hideDelay: typeof p.hideDelay === 'number' ? Math.min(60, Math.max(2, p.hideDelay)) : 8,
       side: p.side === 'left' ? 'left' : 'right',
       hidden: p.hidden === true,
     };
