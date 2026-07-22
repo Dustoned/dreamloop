@@ -123,7 +123,7 @@ export class Engine {
       const name = `u_${pd.id}`;
       switch (pd.type) {
         case 'slider': {
-          let x = this.modulated(st, prefix + pd.id, v as number, pd.min, pd.max);
+          let x = this.modulated(st, prefix + pd.id, v as number, pd.min, pd.max, def, pd.id);
           if (pd.perfScale && this.degradeScale < 1) {
             // Ease toward the cheap end; cost-3 scenes give up detail fastest.
             const give = def.cost >= 3 ? 1 : 0.6;
@@ -153,11 +153,25 @@ export class Engine {
    * Apply a per-slider audio link. Computed here rather than written back to the
    * store, so presets and share codes always capture the user's base setting.
    */
-  private modulated(st: ParamState, path: string, base: number, min: number, max: number): number {
+  private modulated(
+    st: ParamState,
+    path: string,
+    base: number,
+    min: number,
+    max: number,
+    def: EffectDef,
+    id: string,
+  ): number {
+    const amount = st.audio.amount;
+    if (amount <= 0) return base;
+
+    // An explicit link the user made wins over the effect's built-in response.
     const mod = st.mods[path];
-    if (!mod) return base;
-    const level = this.audio[mod.src];
-    const v = base + mod.amt * level * (max - min) * st.audio.amount;
+    const band = mod ? mod.src : def.audioReact?.find((r) => r.id === id)?.band;
+    if (!band) return base;
+    const strength = mod ? mod.amt : (def.audioReact!.find((r) => r.id === id)!.amount);
+
+    const v = base + strength * this.audio[band] * (max - min) * amount;
     return Math.min(max, Math.max(min, v));
   }
 

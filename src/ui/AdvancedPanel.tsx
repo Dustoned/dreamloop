@@ -11,6 +11,7 @@ import { ScenePicker } from './ScenePicker';
 import { AudioPanel } from './AudioPanel';
 import { AudioAmountSlider } from './MacroSlider';
 import { PerformancePanel } from './PerformancePanel';
+import { DisplaySettings } from './DisplaySettings';
 
 export function Section({ title, children }: { title: string; children: ComponentChildren }) {
   return (
@@ -101,6 +102,10 @@ export function AdvancedPanel() {
 
       <Section title="Performance">
         <PerformancePanel />
+      </Section>
+
+      <Section title="Display">
+        <DisplaySettings />
       </Section>
     </div>
   );

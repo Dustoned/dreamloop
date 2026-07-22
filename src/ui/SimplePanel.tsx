@@ -9,6 +9,7 @@ import { ScenePicker } from './ScenePicker';
 import { AudioPanel } from './AudioPanel';
 import { QuickEffects } from './QuickEffects';
 import { PerformancePanel } from './PerformancePanel';
+import { DisplaySettings } from './DisplaySettings';
 import { PresetRow, saveCurrentPreset } from './PresetRow';
 import { openShareDialog } from './ShareDialog';
 import { doSurprise, toggleFullscreen } from './shortcuts';
@@ -52,6 +53,9 @@ export function SimplePanel() {
 
       <h4 class="mini-head">Performance</h4>
       <PerformancePanel />
+
+      <h4 class="mini-head">Display</h4>
+      <DisplaySettings />
 
       <button class="surprise-btn" onClick={doSurprise}>
         ✨ {T.surpriseMe}

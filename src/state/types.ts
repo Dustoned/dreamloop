@@ -61,6 +61,13 @@ export interface EffectDef {
   cost: 1 | 2 | 3;
   /** Multi-pass orchestration; everything but bloom and the RD sim is 'single'. */
   passes?: 'single' | 'bloom' | 'sim';
+  /**
+   * Built-in musical response, chosen to suit this particular effect, so music is
+   * visible everywhere without the user wiring anything up. Applies only while a
+   * track is playing, is scaled by the master Audio Reactivity, and is overridden
+   * by any explicit per-slider link the user creates.
+   */
+  audioReact?: { id: string; band: AudioBand; amount: number }[];
 }
 
 export type AudioMapping = 'bassPulse' | 'beatFlash' | 'trebleSparkle';

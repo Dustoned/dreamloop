@@ -93,6 +93,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🌊',
     frag: plasmaFrag,
     cost: 1,
+    audioReact: [{ id: 'wiggle', band: 'bass', amount: 0.5 }, { id: 'soft', band: 'treble', amount: -0.2 }],
     params: [
       {
         type: 'slider',
@@ -117,6 +118,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🕳️',
     frag: tunnelFrag,
     cost: 1,
+    audioReact: [{ id: 'flyspeed', band: 'beat', amount: 0.35 }, { id: 'twist', band: 'mid', amount: 0.2 }],
     params: [
       { type: 'slider', id: 'flyspeed', label: 'Fly Speed', min: 0, max: 3, step: 0.01, default: 0.8, surprise: [0.3, 1.8] },
       { type: 'slider', id: 'twist', label: 'Twist', min: -1, max: 1, step: 0.01, default: 0.2, surprise: [-0.7, 0.7] },
@@ -143,6 +145,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🪷',
     frag: mandalaFrag,
     cost: 1,
+    audioReact: [{ id: 'mglow', band: 'bass', amount: 0.5 }, { id: 'suck', band: 'beat', amount: 0.25 }],
     params: [
       { type: 'slider', id: 'segments', label: 'Segments', min: 3, max: 24, step: 1, default: 8, surprise: [5, 16] },
       { type: 'slider', id: 'rotspeed', label: 'Rotation', min: -1, max: 1, step: 0.01, default: 0.2, surprise: [-0.6, 0.6] },
@@ -158,6 +161,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🌪️',
     frag: wormholeFrag,
     cost: 3,
+    audioReact: [{ id: 'wradius', band: 'bass', amount: -0.25 }, { id: 'wglow', band: 'beat', amount: 0.4 }],
     params: [
       { type: 'slider', id: 'wfly', label: 'Fly Speed', min: 0, max: 3, step: 0.01, default: 1, surprise: [0.4, 2] },
       { type: 'slider', id: 'wradius', label: 'Width', min: 0.6, max: 2, step: 0.01, default: 1.1, surprise: [0.8, 1.6] },
@@ -173,6 +177,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '💠',
     frag: fractalcoreFrag,
     cost: 3,
+    audioReact: [{ id: 'fglow', band: 'bass', amount: 0.5 }, { id: 'ffly', band: 'beat', amount: 0.3 }],
     params: [
       {
         type: 'select',
@@ -202,6 +207,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🌌',
     frag: nebulaFrag,
     cost: 3,
+    audioReact: [{ id: 'ndensity', band: 'bass', amount: 0.35 }, { id: 'nstars', band: 'treble', amount: 0.4 }],
     params: [
       { type: 'slider', id: 'ndrift', label: 'Drift', min: 0, max: 2, step: 0.01, default: 0.6, surprise: [0.2, 1.3] },
       { type: 'slider', id: 'ndensity', label: 'Gas Density', min: 0.3, max: 1.5, step: 0.01, default: 0.8, surprise: [0.5, 1.3] },
@@ -217,6 +223,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🫧',
     frag: marbleFrag,
     cost: 2,
+    audioReact: [{ id: 'swirl', band: 'bass', amount: 0.4 }, { id: 'flow', band: 'beat', amount: 0.3 }],
     params: [
       { type: 'slider', id: 'mscale', label: 'Scale', min: 0.4, max: 3, step: 0.01, default: 1, curve: 'exp', surprise: [0.6, 2] },
       { type: 'slider', id: 'swirl', label: 'Swirl', min: 0, max: 3, step: 0.01, default: 1.6, surprise: [0.8, 2.6] },
@@ -232,6 +239,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🌀',
     frag: kaliFrag,
     cost: 2,
+    audioReact: [{ id: 'kglow', band: 'bass', amount: 0.55 }, { id: 'kspin', band: 'mid', amount: 0.2 }],
     params: [
       {
         type: 'select',
@@ -275,6 +283,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🌊',
     frag: interferenceFrag,
     cost: 1,
+    audioReact: [{ id: 'freq', band: 'bass', amount: 0.3 }, { id: 'wspeed', band: 'beat', amount: 0.3 }],
     params: [
       { type: 'slider', id: 'sources', label: 'Sources', min: 2, max: 8, step: 1, default: 4, surprise: [2, 6], perfScale: true },
       { type: 'slider', id: 'freq', label: 'Frequency', min: 2, max: 20, step: 0.1, default: 8, curve: 'exp', surprise: [4, 14] },
@@ -290,6 +299,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '✨',
     frag: starsFrag,
     cost: 1,
+    audioReact: [{ id: 'twinkle', band: 'treble', amount: 0.5 }, { id: 'fly', band: 'beat', amount: 0.4 }],
     params: [
       { type: 'slider', id: 'density', label: 'Density', min: 0.2, max: 1.5, step: 0.01, default: 0.7, surprise: [0.4, 1.2] },
       { type: 'slider', id: 'fly', label: 'Fly Speed', min: 0, max: 3, step: 0.01, default: 1, surprise: [0.3, 2] },
@@ -305,6 +315,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🔯',
     frag: geometryFrag,
     cost: 1,
+    audioReact: [{ id: 'gpulse', band: 'bass', amount: 0.5 }, { id: 'thick', band: 'beat', amount: 0.3 }],
     params: [
       {
         type: 'select',
@@ -331,6 +342,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🔍',
     frag: mandelzoomFrag,
     cost: 3,
+    audioReact: [{ id: 'zspeed', band: 'beat', amount: 0.4 }, { id: 'trapmix', band: 'mid', amount: 0.2 }],
     params: [
       {
         type: 'select',
@@ -388,6 +400,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🫧',
     frag: juliamorphFrag,
     cost: 3,
+    audioReact: [{ id: 'jglow', band: 'bass', amount: 0.6 }, { id: 'jmorph', band: 'beat', amount: 0.3 }],
     params: [
       {
         type: 'select',
@@ -431,6 +444,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🧿',
     frag: mandelbulbFrag,
     cost: 3,
+    audioReact: [{ id: 'bglow', band: 'bass', amount: 0.55 }, { id: 'bpower', band: 'treble', amount: 0.12 }],
     params: [
       { type: 'slider', id: 'bpower', label: 'Bulb Power', min: 2, max: 12, step: 0.01, default: 8, surprise: [3, 11] },
       { type: 'slider', id: 'bmorph', label: 'Shape Morph', min: 0, max: 1, step: 0.01, default: 0.25, surprise: [0, 0.8] },
@@ -460,6 +474,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '📦',
     frag: infinityboxFrag,
     cost: 3,
+    audioReact: [{ id: 'mglow', band: 'bass', amount: 0.5 }, { id: 'mtwist', band: 'mid', amount: 0.25 }],
     params: [
       {
         type: 'select',
@@ -487,6 +502,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '⭕',
     frag: apollonianFrag,
     cost: 3,
+    audioReact: [{ id: 'aglow', band: 'bass', amount: 0.55 }, { id: 'aspin', band: 'beat', amount: 0.2 }],
     params: [
       { type: 'slider', id: 'ascale', label: 'Packing', min: 1.1, max: 2.2, step: 0.005, default: 1.35, surprise: [1.2, 1.9] },
       { type: 'slider', id: 'azoom', label: 'Endless Zoom', min: 0, max: 2, step: 0.01, default: 0.8, surprise: [0.3, 1.5] },
@@ -503,6 +519,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🦠',
     frag: cellsFrag,
     cost: 2,
+    audioReact: [{ id: 'cpulse', band: 'bass', amount: 0.6 }, { id: 'move', band: 'beat', amount: 0.25 }],
     params: [
       { type: 'slider', id: 'cellsize', label: 'Cell Size', min: 0.5, max: 3, step: 0.01, default: 1.2, curve: 'exp', surprise: [0.7, 2.2] },
       { type: 'slider', id: 'move', label: 'Motion', min: 0, max: 2, step: 0.01, default: 0.8, surprise: [0.3, 1.5] },
@@ -518,6 +535,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🧬',
     frag: tissueViewFrag,
     cost: 2,
+    audioReact: [{ id: 'relief', band: 'bass', amount: 0.4 }, { id: 'stir', band: 'beat', amount: 0.3 }],
     passes: 'sim',
     params: [
       { type: 'slider', id: 'feed', label: 'Feed', min: 0.02, max: 0.09, step: 0.001, default: 0.037, surprise: [0.028, 0.075] },
@@ -535,6 +553,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '💫',
     frag: echoFrag,
     cost: 1,
+    audioReact: [{ id: 'persist', band: 'bass', amount: 0.25 }, { id: 'fzoom', band: 'beat', amount: 0.35 }],
     params: [
       {
         type: 'slider',
@@ -570,6 +589,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🪞',
     frag: kaleidoFrag,
     cost: 1,
+    audioReact: [{ id: 'kangle', band: 'treble', amount: 0.3 }, { id: 'ksegments', band: 'beat', amount: 0.25 }],
     params: [
       { type: 'slider', id: 'ksegments', label: 'Segments', min: 2, max: 16, step: 1, default: 6, surprise: [3, 12] },
       { type: 'slider', id: 'kangle', label: 'Angle', min: 0, max: 1, step: 0.01, default: 0 },
@@ -593,6 +613,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🟪',
     frag: pixelateFrag,
     cost: 1,
+    audioReact: [{ id: 'psize', band: 'bass', amount: 0.5 }],
     params: [
       { type: 'slider', id: 'psize', label: 'Block Size', min: 2, max: 64, step: 1, default: 10, curve: 'exp', surprise: [4, 32] },
       { type: 'slider', id: 'pgap', label: 'Cell Edges', min: 0, max: 1, step: 0.01, default: 0 },
@@ -605,6 +626,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🖨️',
     frag: posterizeFrag,
     cost: 1,
+    audioReact: [{ id: 'levels', band: 'bass', amount: -0.35 }],
     params: [
       { type: 'slider', id: 'levels', label: 'Levels', min: 2, max: 16, step: 1, default: 5, surprise: [3, 8] },
       { type: 'toggle', id: 'pdither', label: 'Dither', default: true },
@@ -618,6 +640,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🔮',
     frag: prismFrag,
     cost: 1,
+    audioReact: [{ id: 'pstrength', band: 'beat', amount: 0.5 }],
     params: [
       { type: 'slider', id: 'pstrength', label: 'Strength', min: 0, max: 1, step: 0.01, default: 0.35, surprise: [0.1, 0.8] },
       {
@@ -639,6 +662,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🌟',
     frag: bloomCompFrag,
     cost: 2,
+    audioReact: [{ id: 'bintensity', band: 'bass', amount: 0.5 }],
     passes: 'bloom',
     params: [
       { type: 'slider', id: 'bthreshold', label: 'Threshold', min: 0, max: 1, step: 0.01, default: 0.55 },
@@ -653,6 +677,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🌈',
     frag: huecycleFrag,
     cost: 1,
+    audioReact: [{ id: 'cyclespeed', band: 'beat', amount: 0.4 }],
     params: [
       {
         type: 'slider',
@@ -674,6 +699,7 @@ export const EFFECTS: EffectDef[] = [
     icon: '🎞️',
     frag: finalFrag,
     cost: 1,
+    audioReact: [{ id: 'grain', band: 'treble', amount: 0.4 }, { id: 'vig', band: 'bass', amount: 0.3 }],
     params: [
       { type: 'slider', id: 'vig', label: 'Vignette', min: 0, max: 1, step: 0.01, default: 0.35 },
       { type: 'slider', id: 'vigsoft', label: 'Softness', min: 0, max: 1, step: 0.01, default: 0.5 },

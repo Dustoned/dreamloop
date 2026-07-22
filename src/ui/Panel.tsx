@@ -29,7 +29,7 @@ export function Panel() {
 
   if (collapsed) {
     return (
-      <button class="panel-pill" onClick={() => setCollapsed(false)} title="Open controls">
+      <button class="panel-pill" onClick={() => setCollapsed(false)} title="Open controls (H)">
         ✨
       </button>
     );

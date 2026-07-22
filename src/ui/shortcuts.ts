@@ -3,6 +3,7 @@ import { makeSurprise, snapshotState } from '../state/surprise';
 import { requestPhoto } from '../capture/screenshot';
 import { party } from '../party/partyMode';
 import { showToast } from './Toast';
+import { uiPrefs, setUiPref, subscribeUi } from './uiPrefs';
 import { T } from '../i18n/en';
 
 export function toggleFullscreen(): void {
@@ -29,7 +30,8 @@ export function togglePause(): void {
 }
 
 export function togglePanel(): void {
-  document.body.classList.toggle('panel-hidden');
+  setUiPref('hidden', !uiPrefs.hidden);
+  if (uiPrefs.hidden) showToast('Controls hidden — press H to bring them back.');
 }
 
 export function installShortcuts(): void {
@@ -67,29 +69,45 @@ export function installShortcuts(): void {
 /** Fade the UI (and cursor) after inactivity; any activity restores it. */
 export function installAutoHide(): void {
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let pointerHeld = false;
+  let heldSince = 0;
 
-  const hide = () => {
-    if (pointerHeld) return;
+  // Treat a press as "held" only briefly. A missed pointerup (context menu, an
+  // element removed mid-drag, a lost pointer capture) used to latch this on and
+  // the controls would then never fade again.
+  const isHeld = (): boolean => heldSince > 0 && performance.now() - heldSince < 5000;
+
+  const hide = (): void => {
+    if (!uiPrefs.autoHide) return;
+    // Still holding: check again shortly rather than giving up, otherwise a press
+    // whose release never arrives would keep the controls up forever.
+    if (isHeld()) {
+      timer = setTimeout(hide, 500);
+      return;
+    }
     document.body.classList.add('ui-idle');
   };
-  const wake = () => {
+  const wake = (): void => {
     document.body.classList.remove('ui-idle');
     clearTimeout(timer);
-    timer = setTimeout(hide, 4000);
+    if (uiPrefs.autoHide) timer = setTimeout(hide, uiPrefs.hideDelay * 1000);
   };
 
-  window.addEventListener('pointermove', wake, { passive: true });
-  window.addEventListener('pointerdown', (e) => {
-    pointerHeld = true;
-    wake();
-    void e;
-  });
-  window.addEventListener('pointerup', () => {
-    pointerHeld = false;
+  addEventListener('pointermove', wake, { passive: true });
+  addEventListener('pointerdown', () => {
+    heldSince = performance.now();
     wake();
   });
-  window.addEventListener('keydown', wake);
-  window.addEventListener('touchstart', wake, { passive: true });
+  const release = (): void => {
+    heldSince = 0;
+    wake();
+  };
+  addEventListener('pointerup', release);
+  addEventListener('pointercancel', release);
+  addEventListener('blur', release);
+  addEventListener('keydown', wake);
+  addEventListener('touchstart', wake, { passive: true });
+  addEventListener('wheel', wake, { passive: true });
+
+  subscribeUi(wake); // re-arm when the delay or the toggle changes
   wake();
 }

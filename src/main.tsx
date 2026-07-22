@@ -11,6 +11,7 @@ import { registerEngine, startIdleWarmup } from './engine/warmup';
 import { consumePhoto } from './capture/screenshot';
 import { audio } from './audio/audioEngine';
 import { installShortcuts, installAutoHide } from './ui/shortcuts';
+import { applyUiPrefs } from './ui/uiPrefs';
 import { showToast } from './ui/Toast';
 import { App } from './app';
 import './styles/app.css';
@@ -169,6 +170,7 @@ if (glc) {
   document.body.appendChild(msg);
 }
 
+applyUiPrefs();
 installShortcuts();
 installAutoHide();
 render(<App />, document.getElementById('app')!);
