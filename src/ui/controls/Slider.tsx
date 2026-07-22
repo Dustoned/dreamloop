@@ -87,8 +87,11 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
   const [modOpen, setModOpen] = useState(false);
   const linked = !!store.state.mods[path];
 
+  // The track cannot move during a pointer-captured drag, so measure it once on
+  // press instead of forcing a layout on every pointermove.
+  const rect = useRef<{ left: number; width: number } | null>(null);
   const setFromClient = (clientX: number) => {
-    const r = track.current!.getBoundingClientRect();
+    const r = rect.current ?? track.current!.getBoundingClientRect();
     store.set(path, fromT(def, (clientX - r.left) / r.width));
   };
 
@@ -131,11 +134,19 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
         ref={track}
         onPointerDown={(e) => {
           (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+          const r = track.current!.getBoundingClientRect();
+          rect.current = { left: r.left, width: r.width };
           setFromClient(e.clientX);
         }}
         onPointerMove={(e) => {
           if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId))
             setFromClient(e.clientX);
+        }}
+        onPointerUp={() => {
+          rect.current = null;
+        }}
+        onPointerCancel={() => {
+          rect.current = null;
         }}
       >
         <div class="slider-fill" style={{ width: `${toT(def, value) * 100}%` }} />

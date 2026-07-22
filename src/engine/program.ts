@@ -38,48 +38,115 @@ function compileShader(
   const sh = gl.createShader(type)!;
   gl.shaderSource(sh, src);
   gl.compileShader(sh);
-  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
-    const log = gl.getShaderInfoLog(sh);
-    const numbered = src
-      .split('\n')
-      .map((l, i) => `${i + 1}: ${l}`)
-      .join('\n');
-    console.error(`[dreamloop] shader compile failed (${label}):\n${log}\n${numbered}`);
-    gl.deleteShader(sh);
-    throw new Error(`shader-compile-failed:${label}`);
-  }
+  // Deliberately NOT querying COMPILE_STATUS here: that call blocks until the
+  // driver has finished compiling, which is exactly the multi-second main-thread
+  // stall this whole design exists to avoid. Errors surface from the link check
+  // instead, and reportShaderError() below digs out the details only then.
   return sh;
+}
+
+/** Called only after a link failure, where blocking no longer matters. */
+function reportShaderError(
+  gl: WebGL2RenderingContext,
+  sh: WebGLShader | null,
+  src: string,
+  label: string,
+): void {
+  if (!sh || gl.getShaderParameter(sh, gl.COMPILE_STATUS)) return;
+  const numbered = src
+    .split('\n')
+    .map((l, i) => `${i + 1}: ${l}`)
+    .join('\n');
+  console.error(
+    `[dreamloop] shader compile failed (${label}):\n${gl.getShaderInfoLog(sh)}\n${numbered}`,
+  );
 }
 
 export class Program {
   readonly prog: WebGLProgram;
   private readonly gl: WebGL2RenderingContext;
+  private readonly glc: GlContext;
+  private readonly label: string;
   private readonly locs = new Map<string, WebGLUniformLocation | null>();
+  private state: 'linking' | 'ready' | 'failed' = 'linking';
+  private readonly deadline: number;
+  private readonly fragSrc: string;
+  private vs: WebGLShader | null = null;
+  private fs: WebGLShader | null = null;
+  /** Give the driver this long to report completion before we block and wait. */
+  private static readonly PATIENCE_MS = 1500;
 
+  /**
+   * Kicks off compile + link but does NOT wait for the result. Querying LINK_STATUS
+   * forces the driver to finish, which on weak hardware blocks the main thread for
+   * seconds — the app would look completely frozen. Call ready() on later frames
+   * instead and keep drawing the previous scene until it returns true.
+   */
   constructor(glc: GlContext, fragBody: string, prelude: string, label = 'shader') {
     const gl = glc.gl;
     this.gl = gl;
-    const fragSrc = `#version 300 es\nprecision highp float;\nprecision highp int;\n${prelude}\n${fragBody}`;
+    this.glc = glc;
+    this.label = label;
+    this.fragSrc = `#version 300 es\nprecision highp float;\nprecision highp int;\n${prelude}\n${fragBody}`;
     const vs = compileShader(gl, gl.VERTEX_SHADER, VERT, `${label}.vert`);
-    const fs = compileShader(gl, gl.FRAGMENT_SHADER, fragSrc, `${label}.frag`);
+    const fs = compileShader(gl, gl.FRAGMENT_SHADER, this.fragSrc, `${label}.frag`);
     const prog = gl.createProgram()!;
     gl.attachShader(prog, vs);
     gl.attachShader(prog, fs);
     gl.linkProgram(prog);
-    gl.deleteShader(vs);
-    gl.deleteShader(fs);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-      const log = gl.getProgramInfoLog(prog);
-      gl.deleteProgram(prog);
-      console.error(`[dreamloop] program link failed (${label}): ${log}`);
-      throw new Error(`program-link-failed:${label}`);
-    }
+    // Keep the handles so a link failure can still be explained precisely.
+    this.vs = vs;
+    this.fs = fs;
     this.prog = prog;
-    const n = gl.getProgramParameter(prog, gl.ACTIVE_UNIFORMS) as number;
-    for (let i = 0; i < n; i++) {
-      const info = gl.getActiveUniform(prog, i)!;
-      this.locs.set(info.name, gl.getUniformLocation(prog, info.name));
+    this.deadline = performance.now() + Program.PATIENCE_MS;
+  }
+
+  private releaseShaders(): void {
+    if (this.vs) this.gl.deleteShader(this.vs);
+    if (this.fs) this.gl.deleteShader(this.fs);
+    this.vs = null;
+    this.fs = null;
+  }
+
+  /** True once the program is linked and usable. Cheap to call every frame. */
+  ready(): boolean {
+    if (this.state !== 'linking') return this.state === 'ready';
+    const gl = this.gl;
+    const ext = this.glc.parallelCompile;
+    // Without the extension we have no choice but to block once, here. We also stop
+    // waiting past the deadline: some drivers never flip the completion flag, and a
+    // one-off stall is far better than a canvas that stays black forever.
+    if (
+      ext &&
+      performance.now() < this.deadline &&
+      !gl.getProgramParameter(this.prog, ext.COMPLETION_STATUS_KHR)
+    ) {
+      return false;
     }
+
+    if (!gl.getProgramParameter(this.prog, gl.LINK_STATUS)) {
+      reportShaderError(gl, this.fs, this.fragSrc, `${this.label}.frag`);
+      reportShaderError(gl, this.vs, VERT, `${this.label}.vert`);
+      console.error(
+        `[dreamloop] program link failed (${this.label}): ${gl.getProgramInfoLog(this.prog)}`,
+      );
+      this.releaseShaders();
+      gl.deleteProgram(this.prog);
+      this.state = 'failed';
+      return false;
+    }
+    const n = gl.getProgramParameter(this.prog, gl.ACTIVE_UNIFORMS) as number;
+    for (let i = 0; i < n; i++) {
+      const info = gl.getActiveUniform(this.prog, i)!;
+      this.locs.set(info.name, gl.getUniformLocation(this.prog, info.name));
+    }
+    this.releaseShaders();
+    this.state = 'ready';
+    return true;
+  }
+
+  get failed(): boolean {
+    return this.state === 'failed';
   }
 
   use(): void {

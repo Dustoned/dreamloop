@@ -8,6 +8,7 @@ import { PalettePicker } from './PalettePicker';
 import { ScenePicker } from './ScenePicker';
 import { AudioPanel } from './AudioPanel';
 import { QuickEffects } from './QuickEffects';
+import { PerformancePanel } from './PerformancePanel';
 import { PresetRow, saveCurrentPreset } from './PresetRow';
 import { openShareDialog } from './ShareDialog';
 import { doSurprise, toggleFullscreen } from './shortcuts';
@@ -48,6 +49,9 @@ export function SimplePanel() {
       <h4 class="mini-head">Music</h4>
       <AudioPanel compact />
       <AudioAmountSlider label={T.audioReact} />
+
+      <h4 class="mini-head">Performance</h4>
+      <PerformancePanel />
 
       <button class="surprise-btn" onClick={doSurprise}>
         ✨ {T.surpriseMe}

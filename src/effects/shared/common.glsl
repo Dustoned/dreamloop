@@ -77,7 +77,7 @@ float fbm3(vec3 p, int oct) {
  * gradient across the value range, shift scrolls it (global Colour Speed).
  */
 vec3 pal(float t) {
-  return texture(u_palette, vec2(t * u_palSpread + u_palShift, 0.5)).rgb;
+  return textureLod(u_palette, vec2(t * u_palSpread + u_palShift, 0.5), 0.0).rgb;
 }
 
 float luma(vec3 c) {

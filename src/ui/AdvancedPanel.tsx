@@ -10,6 +10,7 @@ import { PalettePicker } from './PalettePicker';
 import { ScenePicker } from './ScenePicker';
 import { AudioPanel } from './AudioPanel';
 import { AudioAmountSlider } from './MacroSlider';
+import { PerformancePanel } from './PerformancePanel';
 
 export function Section({ title, children }: { title: string; children: ComponentChildren }) {
   return (
@@ -96,6 +97,10 @@ export function AdvancedPanel() {
 
       <Section title="Party Mode">
         <PartySettings />
+      </Section>
+
+      <Section title="Performance">
+        <PerformancePanel />
       </Section>
     </div>
   );

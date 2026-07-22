@@ -3,6 +3,16 @@ export class GlContext {
   readonly canvas: HTMLCanvasElement;
   /** Whether we can render into RGBA16F targets (needed for smooth feedback trails). */
   readonly halfFloat: boolean;
+  /** Present when the driver can link programs off the main thread. */
+  readonly parallelCompile: { COMPLETION_STATUS_KHR: number } | null;
+  /** Turned off by the device profile on weak GPUs — halves target bandwidth. */
+  allowFloatTargets = true;
+  /**
+   * Discard a target's old contents before overwriting it. A real bandwidth win on
+   * tile-based mobile GPUs; on desktop ANGLE it is at best a no-op, so it is only
+   * enabled where it pays off.
+   */
+  useInvalidate = false;
 
   constructor(canvas: HTMLCanvasElement, opts: { preserveDrawingBuffer?: boolean } = {}) {
     const gl = canvas.getContext('webgl2', {
@@ -19,7 +29,7 @@ export class GlContext {
     this.halfFloat = !!(
       gl.getExtension('EXT_color_buffer_half_float') || gl.getExtension('EXT_color_buffer_float')
     );
-    gl.getExtension('KHR_parallel_shader_compile');
+    this.parallelCompile = gl.getExtension('KHR_parallel_shader_compile');
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
     gl.clearColor(0, 0, 0, 1);

@@ -5,7 +5,9 @@ import { store } from './state/paramStore';
 import { buildDefaultState, hydrate } from './state/defaults';
 import { codeFromHash, decodeCode } from './state/urlCodec';
 import { loadSession, saveSession } from './state/userPresets';
-import { PerfMonitor } from './engine/perf';
+import { perfMonitor } from './engine/perf';
+import { detectDevice } from './engine/device';
+import { registerEngine, startIdleWarmup } from './engine/warmup';
 import { consumePhoto } from './capture/screenshot';
 import { audio } from './audio/audioEngine';
 import { installShortcuts, installAutoHide } from './ui/shortcuts';
@@ -16,16 +18,18 @@ import './styles/app.css';
 store.init(buildDefaultState());
 
 // Boot priority: shared code in the URL > last session > defaults.
+let isReturningVisitor = false;
 const hashCode = codeFromHash();
 if (hashCode) {
   void decodeCode(hashCode).then((st) => {
     if (st) store.applySnapshot(st);
   });
+  isReturningVisitor = true;
 } else {
   const sess = loadSession();
-  if (sess) store.applySnapshot(hydrate(sess));
-  else if (window.matchMedia('(max-width: 719px)').matches) {
-    store.set('global.quality', 0.6);
+  if (sess) {
+    store.applySnapshot(hydrate(sess));
+    isReturningVisitor = true;
   }
 }
 
@@ -51,7 +55,21 @@ try {
 let pumpClock = performance.now();
 
 if (glc) {
+  // Pick safe starting settings for this machine before the first frame is drawn.
+  const device = detectDevice(glc.gl);
+  glc.allowFloatTargets = device.useFloatTargets;
+  glc.useInvalidate = device.useInvalidate;
+  if (!isReturningVisitor) store.set('global.quality', device.startQuality);
+  // Drop the frosted-glass blur, which the GPU would otherwise recompute over the
+  // live canvas every frame.
+  if (device.tier === 'low') document.body.classList.add('cheap-ui');
+
   const engine = new Engine(glc, () => store.state);
+  engine.dprCap = device.dprCap;
+  registerEngine(engine);
+  // Link the rest of the shaders while the browser is idle, so switching scenes
+  // later never pays the compile cost.
+  setTimeout(startIdleWarmup, 1500);
   if (import.meta.env.DEV) {
     const w = window as unknown as {
       __engine?: Engine;
@@ -95,25 +113,53 @@ if (glc) {
     setTimeout(once, 40);
   };
   engine.audio = audio.frame;
-  const perf = new PerfMonitor();
+  const perf = perfMonitor;
   let lastFrame = 0;
+  let toldUser = false;
+  let errorsLogged = 0;
   const frame = (): void => {
     const now = performance.now();
-    audio.update();
-    engine.render(now);
-    consumePhoto(canvas);
-    if (!document.hidden && lastFrame > 0) {
-      perf.sample(now - lastFrame, now);
-      engine.degradeScale = perf.degrade;
-      if (perf.justDegraded) {
-        perf.justDegraded = false;
-        showToast('Quality lowered a bit to keep things smooth.');
+    try {
+      audio.update();
+      engine.render(now);
+      consumePhoto(canvas);
+      // A frame spent linking a shader is not a slow frame — do not let it trigger
+      // a quality cut, and do not measure across a tab that was in the background.
+      if (!document.hidden && lastFrame > 0 && !engine.compiling) {
+        perf.sample(now - lastFrame, now, store.state.params['global.quality'] as number);
+        engine.degradeScale = perf.degrade;
+        if (perf.justDegraded) {
+          perf.justDegraded = false;
+          if (!toldUser) {
+            toldUser = true;
+            showToast('Turned the quality down so it stays smooth. Change it under Performance.');
+          }
+        }
       }
+      lastFrame = now;
+    } catch (err) {
+      // One bad frame must never end the loop — that would freeze the app for good.
+      if (errorsLogged++ < 5) console.error('[dreamloop] frame failed', err);
+      lastFrame = 0;
+    } finally {
+      schedule(frame);
     }
-    lastFrame = now;
-    schedule(frame);
   };
   schedule(frame);
+
+  // The perf monitor must not read a huge delta after the tab was in the background.
+  document.addEventListener('visibilitychange', () => {
+    lastFrame = 0;
+    perf.reset();
+  });
+
+  // Losing the GPU context leaves a permanently black canvas otherwise; on weak
+  // devices a long heavy shader can genuinely trigger a driver reset.
+  canvas.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault();
+    showToast('Graphics hiccup — reloading to recover.');
+    setTimeout(() => location.reload(), 1200);
+  });
 } else {
   document.body.classList.add('no-webgl');
   const msg = document.createElement('div');

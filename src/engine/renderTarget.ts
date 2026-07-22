@@ -20,7 +20,7 @@ export class RenderTarget {
 
   private alloc(w: number, h: number): void {
     const gl = this.glc.gl;
-    const float = this.useFloat && this.glc.halfFloat;
+    const float = this.useFloat && this.glc.halfFloat && this.glc.allowFloatTargets;
     this.width = w;
     this.height = h;
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
@@ -49,10 +49,15 @@ export class RenderTarget {
     this.alloc(w, h);
   }
 
-  /** Bind as draw target and set the viewport. */
+  /**
+   * Bind as draw target and set the viewport. Every pass overwrites 100% of its
+   * target, so tell the driver not to load the old contents first — on tile-based
+   * mobile GPUs that load is pure wasted bandwidth.
+   */
   bind(): void {
     const gl = this.glc.gl;
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.fbo);
+    if (this.glc.useInvalidate) gl.invalidateFramebuffer(gl.FRAMEBUFFER, [gl.COLOR_ATTACHMENT0]);
     gl.viewport(0, 0, this.width, this.height);
   }
 

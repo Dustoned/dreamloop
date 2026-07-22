@@ -8,8 +8,8 @@ void main() {
   vec2 dir = normalize(d + 1e-6);
   if (u_pmode > 0.5) dir = vec2(-dir.y, dir.x); // angular twist mode
   vec3 col;
-  col.r = texture(u_src, v_uv + dir * amt).r;
-  col.g = texture(u_src, v_uv).g;
-  col.b = texture(u_src, v_uv - dir * amt).b;
+  col.r = textureLod(u_src, v_uv + dir * amt, 0.0).r;
+  col.g = textureLod(u_src, v_uv, 0.0).g;
+  col.b = textureLod(u_src, v_uv - dir * amt, 0.0).b;
   fragColor = vec4(col, 1.0);
 }

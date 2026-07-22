@@ -1,5 +1,6 @@
 import { SCENES } from '../effects';
 import { store } from '../state/paramStore';
+import { warmEffect } from '../engine/warmup';
 import { useStructure } from './hooks/useParam';
 
 const THUMB_GRADIENTS: Record<string, string> = {
@@ -32,6 +33,10 @@ export function ScenePicker() {
         <button
           key={s.id}
           class={`scene-card ${s.id === active ? 'active' : ''}`}
+          // Start linking on press, so the shader is usually ready by the time the
+          // click lands instead of stalling the first frame of the new scene.
+          onPointerDown={() => warmEffect(s.id)}
+          onMouseEnter={() => warmEffect(s.id)}
           onClick={() => store.mutate((st) => (st.scene = s.id))}
         >
           <span class="scene-thumb" style={{ background: THUMB_GRADIENTS[s.id] ?? '#222' }}>

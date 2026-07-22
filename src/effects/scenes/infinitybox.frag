@@ -23,18 +23,22 @@ float crossDE(vec3 p) {
   return min(da, min(db, dc)) - 1.0;
 }
 
-float de(vec3 p, out float trap, out float lvl) {
+float de(vec3 p, mat2 rstep, out float trap, out float lvl) {
   float d = boxDE(p, vec3(1.0));
   float s = 1.0;
   trap = 1e9;
   lvl = 0.0;
+  mat2 rm = mat2(1.0, 0.0, 0.0, 1.0);
   int n = int(u_miters);
   for (int i = 0; i < 10; i++) {
     if (i >= n) break;
     vec3 a = mod(p * s, 2.0) - 1.0;
     s *= 3.0;
     vec3 r = abs(1.0 - u_moffset * 3.0 * abs(a));
-    r.xy = rot2(u_mtwist * float(i) * 0.5) * r.xy;
+    // Accumulate the per-level rotation instead of calling rot2 (a sin and a cos)
+    // on every one of up to 900 inner iterations per pixel.
+    rm = rstep * rm;
+    r.xy = rm * r.xy;
 
     float c;
     if (u_mvariant < 0.5) {
@@ -73,10 +77,11 @@ void main() {
   float maxD = 9.0 * zoom;
   float eps = 0.0009 * zoom;
 
+  mat2 rstep = rot2(u_mtwist * 0.5);
   for (int i = 0; i < 90; i++) {
     vec3 p = ro + rd * dist;
     float tr, lv;
-    float d = de(p, tr, lv);
+    float d = de(p, rstep, tr, lv);
     glow += exp(-abs(d) / (0.03 * zoom));
     if (d < eps) {
       hit = dist;

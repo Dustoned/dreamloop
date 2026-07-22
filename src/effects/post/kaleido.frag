@@ -19,5 +19,5 @@ void main() {
     // 4-way quadrant mirror
     uv = 1.0 - abs(1.0 - 2.0 * v_uv);
   }
-  fragColor = vec4(texture(u_src, uv).rgb, 1.0);
+  fragColor = vec4(textureLod(u_src, uv, 0.0).rgb, 1.0);
 }

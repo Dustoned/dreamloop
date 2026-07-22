@@ -16,13 +16,13 @@ void main() {
   }
 
   vec2 t = u_texel;
-  vec2 c = texture(u_prev, uv).xy;
+  vec2 c = textureLod(u_prev, uv, 0.0).xy;
   // 3x3 Laplacian: center -1, orthogonal 0.2, diagonal 0.05
   vec2 lap = -c;
-  lap += 0.2 * (texture(u_prev, uv + vec2(t.x, 0.0)).xy + texture(u_prev, uv - vec2(t.x, 0.0)).xy +
-                texture(u_prev, uv + vec2(0.0, t.y)).xy + texture(u_prev, uv - vec2(0.0, t.y)).xy);
-  lap += 0.05 * (texture(u_prev, uv + t).xy + texture(u_prev, uv - t).xy +
-                 texture(u_prev, uv + vec2(t.x, -t.y)).xy + texture(u_prev, uv - vec2(t.x, -t.y)).xy);
+  lap += 0.2 * (textureLod(u_prev, uv + vec2(t.x, 0.0), 0.0).xy + textureLod(u_prev, uv - vec2(t.x, 0.0), 0.0).xy +
+                textureLod(u_prev, uv + vec2(0.0, t.y), 0.0).xy + textureLod(u_prev, uv - vec2(0.0, t.y), 0.0).xy);
+  lap += 0.05 * (textureLod(u_prev, uv + t, 0.0).xy + textureLod(u_prev, uv - t, 0.0).xy +
+                 textureLod(u_prev, uv + vec2(t.x, -t.y), 0.0).xy + textureLod(u_prev, uv - vec2(t.x, -t.y), 0.0).xy);
 
   float A = c.x;
   float B = c.y;

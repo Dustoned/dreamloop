@@ -19,6 +19,12 @@ export interface SliderParam extends ParamBase {
   unit?: string;
   /** Tasteful sub-range for the Surprise Me generator; omit to keep the default. */
   surprise?: [number, number];
+  /**
+   * Detail-style parameter (iteration counts, layer counts, march quality). When
+   * the performance monitor scales back, these are eased toward their minimum so
+   * a struggling device does less shader work, not just fewer pixels.
+   */
+  perfScale?: boolean;
 }
 
 export interface ColorParam extends ParamBase {

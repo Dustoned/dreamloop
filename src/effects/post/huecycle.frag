@@ -10,7 +10,7 @@ vec3 hueRotate(vec3 c, float a) {
 }
 
 void main() {
-  vec3 c = texture(u_src, v_uv).rgb;
+  vec3 c = textureLod(u_src, v_uv, 0.0).rgb;
   c = hueRotate(c, u_time * u_cyclespeed);
   c = mix(vec3(luma(c)), c, u_sat);
   fragColor = vec4(clamp(c, 0.0, 2.0), 1.0);

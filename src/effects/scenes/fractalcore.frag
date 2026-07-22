@@ -7,12 +7,13 @@ uniform float u_fmode;
 uniform float u_fspin;
 
 // Raymarched kaleidoscopic IFS in endlessly repeating space.
-float de(vec3 p, float rotA, out float trap) {
+// rm is computed once per frame in main(); calling rot2 here would burn a sin and
+// a cos on every march step.
+float de(vec3 p, mat2 rm, out float trap) {
   p = mod(p + 1.5, 3.0) - 1.5;
   float scale = u_ffold;
   float factor = 1.0;
   trap = 1e9;
-  mat2 rm = rot2(rotA);
   int n = int(u_fiter2);
   for (int i = 0; i < 9; i++) {
     if (i >= n) break;
@@ -56,10 +57,11 @@ void main() {
   float hit = -1.0;
   float trap = 0.0;
   float steps = 0.0;
+  mat2 rm = rot2(rotA);
   for (int i = 0; i < 64; i++) {
     vec3 p = ro + rd * dist;
     float tr;
-    float d = de(p, rotA, tr);
+    float d = de(p, rm, tr);
     glow += exp(-d * 14.0);
     if (d < 0.004) {
       hit = dist;

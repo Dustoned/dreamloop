@@ -11,7 +11,7 @@ void main() {
   vec2 uv = v_uv;
   // Bass pulse: subtle zoom toward the center.
   uv = 0.5 + (uv - 0.5) * (1.0 - u_audioFx.x * 0.06);
-  vec3 c = texture(u_src, uv).rgb;
+  vec3 c = textureLod(u_src, uv, 0.0).rgb;
 
   // Beat flash.
   c *= 1.0 + u_audioFx.y * 0.35;

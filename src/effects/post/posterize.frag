@@ -3,12 +3,12 @@ uniform float u_pdither;
 uniform float u_dscale;
 
 void main() {
-  vec3 c = texture(u_src, v_uv).rgb;
+  vec3 c = textureLod(u_src, v_uv, 0.0).rgb;
   if (u_pdither > 0.5) {
     // 4x4 ordered Bayer matrix
     vec2 pc = mod(floor(gl_FragCoord.xy / u_dscale), 4.0);
     int idx = int(pc.x) + int(pc.y) * 4;
-    float bayer[16] = float[16](
+    const float bayer[16] = float[16](
       0.0, 8.0, 2.0, 10.0,
       12.0, 4.0, 14.0, 6.0,
       3.0, 11.0, 1.0, 9.0,

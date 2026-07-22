@@ -13,18 +13,32 @@ function useAudio(): void {
 export function LevelMeter() {
   const [levels, setLevels] = useState({ bass: 0, mid: 0, treble: 0, beat: 0 });
   useEffect(() => {
+    let prev = '';
     const t = setInterval(() => {
       const f = audio.frame;
-      setLevels({ bass: f.bass, mid: f.mid, treble: f.treble, beat: f.beat });
+      // Round first and skip the update when nothing visibly moved, so a silent
+      // track does not keep re-rendering the panel.
+      const next = {
+        bass: Math.round(f.bass * 20) / 20,
+        mid: Math.round(f.mid * 20) / 20,
+        treble: Math.round(f.treble * 20) / 20,
+        beat: f.beat > 0.5 ? 1 : 0,
+      };
+      const key = `${next.bass},${next.mid},${next.treble},${next.beat}`;
+      if (key === prev) return;
+      prev = key;
+      setLevels(next);
     }, 80);
     return () => clearInterval(t);
   }, []);
+  // scaleY stays on the compositor; animating height would dirty layout every tick.
+  const bar = (v: number) => ({ transform: `scaleY(${0.2 + v * 0.8})` });
   return (
     <span class="level-meter" title="Bass / Mid / Treble">
-      <span class="lvl" style={{ height: `${4 + levels.bass * 14}px` }} />
-      <span class="lvl" style={{ height: `${4 + levels.mid * 14}px` }} />
-      <span class="lvl" style={{ height: `${4 + levels.treble * 14}px` }} />
-      <span class={`beat-dot ${levels.beat > 0.5 ? 'hit' : ''}`} />
+      <span class="lvl" style={bar(levels.bass)} />
+      <span class="lvl" style={bar(levels.mid)} />
+      <span class="lvl" style={bar(levels.treble)} />
+      <span class={`beat-dot ${levels.beat ? 'hit' : ''}`} />
     </span>
   );
 }

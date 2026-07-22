@@ -15,13 +15,19 @@ vec2 path(float z) {
 float wall(vec3 p) {
   vec2 rel = p.xy - path(p.z);
   float r = length(rel);
-  float ang = atan(rel.y, rel.x);
-  vec2 dir = rel / max(r, 1e-4); // periodic around the tube: no atan seam
-  float bump = u_worganic * (
-    0.12 * sin(ang * 3.0 + p.z * 0.9) +
-    0.08 * sin(ang * 5.0 - p.z * 1.3) +
-    0.28 * (vnoise(dir * 1.4 + vec2(p.z * 1.05, 7.0)) - 0.5)
-  );
+  // With Organic Walls at zero this whole block is multiplied away, so skip it —
+  // the branch is wave-uniform (a uniform decides it) and therefore free, and it
+  // removes an atan, two sines and a noise lookup from every march step.
+  float bump = 0.0;
+  if (u_worganic > 0.0) {
+    float ang = atan(rel.y, rel.x);
+    vec2 dir = rel / max(r, 1e-4); // periodic around the tube: no atan seam
+    bump = u_worganic * (
+      0.12 * sin(ang * 3.0 + p.z * 0.9) +
+      0.08 * sin(ang * 5.0 - p.z * 1.3) +
+      0.28 * (vnoise(dir * 1.4 + vec2(p.z * 1.05, 7.0)) - 0.5)
+    );
+  }
   return u_wradius + bump - r; // positive in open air
 }
 
