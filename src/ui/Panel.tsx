@@ -11,6 +11,7 @@ import { SetupTab } from './tabs/SetupTab';
 import { saveCurrentPreset } from './PresetRow';
 import { openShareDialog } from './ShareDialog';
 import { doSurprise, toggleFullscreen } from './shortcuts';
+import { useSheet, SNAPS } from './useSheet';
 
 type Mode = 'simple' | 'advanced';
 
@@ -26,7 +27,7 @@ export function Panel() {
   const [mode, setMode] = useState<Mode>(loadMode);
   const [tab, setTab] = useState<TabId>(loadTab);
   const [collapsed, setCollapsed] = useState(false);
-  const [sheetFull, setSheetFull] = useState(false);
+  const sheet = useSheet();
   const advanced = mode === 'advanced';
 
   const pickMode = (m: Mode) => {
@@ -51,9 +52,25 @@ export function Panel() {
     );
   }
 
+  // On phones the sheet height is driven by the drag/snap state; on desktop the
+  // rule below is simply not applied (see the media query in app.css).
+  const sheetStyle = { '--sheet-h': `${sheet.dragVh ?? SNAPS[sheet.snap]}vh` } as Record<
+    string,
+    string
+  >;
+
   return (
-    <div class={`panel ${sheetFull ? 'sheet-full' : ''}`}>
-      <div class="sheet-handle" onClick={() => setSheetFull(!sheetFull)} />
+    <div class={`panel snap-${sheet.snap} ${sheet.dragVh !== null ? 'dragging' : ''}`} style={sheetStyle}>
+      <div
+        class="sheet-grip"
+        title="Drag to resize, tap to cycle"
+        onPointerDown={sheet.onPointerDown}
+        onPointerMove={sheet.onPointerMove}
+        onPointerUp={sheet.onPointerUp}
+        onPointerCancel={sheet.onPointerUp}
+      >
+        <span class="sheet-handle" />
+      </div>
 
       <header class="panel-header">
         <span class="panel-title">{T.appName}</span>
@@ -65,8 +82,14 @@ export function Panel() {
             {T.advanced}
           </button>
         </div>
-        <button class="panel-collapse" onClick={() => setCollapsed(true)} title="Collapse">
-          ›
+        <button
+          class="panel-collapse"
+          onClick={() => setCollapsed(true)}
+          title="Hide the controls"
+          aria-label="Hide the controls"
+        >
+          <span class="collapse-desktop">›</span>
+          <span class="collapse-mobile">✕</span>
         </button>
       </header>
 
