@@ -19,6 +19,9 @@ import mandelbulbFrag from './scenes/mandelbulb.frag?raw';
 import juliamorphFrag from './scenes/juliamorph.frag?raw';
 import infinityboxFrag from './scenes/infinitybox.frag?raw';
 import apollonianFrag from './scenes/apollonian.frag?raw';
+import ribbonsFrag from './scenes/ribbons.frag?raw';
+import bloomringFrag from './scenes/bloomring.frag?raw';
+import pulsewaveFrag from './scenes/pulsewave.frag?raw';
 import echoFrag from './post/echo.frag?raw';
 import huecycleFrag from './post/huecycle.frag?raw';
 import finalFrag from './post/final.frag?raw';
@@ -122,6 +125,54 @@ export const EFFECTS: EffectDef[] = [
       { type: 'slider', id: 'waves', label: 'Waves', min: 2, max: 5, step: 1, default: 5, surprise: [3, 5] },
       { type: 'slider', id: 'wiggle', label: 'Wiggle', min: 0, max: 2, step: 0.01, default: 0.8, surprise: [0.2, 1.6] },
       { type: 'slider', id: 'soft', label: 'Softness', min: 0, max: 1, step: 0.01, default: 0.5 },
+    ],
+  },
+  {
+    id: 'ribbons',
+    name: 'Aurora Ribbons',
+    kind: 'scene',
+    icon: '🎗️',
+    frag: ribbonsFrag,
+    cost: 1,
+    params: [
+      { type: 'slider', id: 'rbands', label: 'Ribbons', min: 2, max: 9, step: 1, default: 6, surprise: [3, 8] },
+      { type: 'slider', id: 'rdrive', label: 'Music Drive', min: 0, max: 1.5, step: 0.01, default: 1, surprise: [0.7, 1.4] },
+      { type: 'slider', id: 'rflow', label: 'Flow Speed', min: 0, max: 2, step: 0.01, default: 0.7, surprise: [0.3, 1.4], integrate: true },
+      { type: 'slider', id: 'rswing', label: 'Swing', min: 0.2, max: 2.5, step: 0.01, default: 1, surprise: [0.6, 2] },
+      { type: 'slider', id: 'rwidth', label: 'Thickness', min: 0.3, max: 2.5, step: 0.01, default: 1, surprise: [0.5, 1.8] },
+      { type: 'slider', id: 'rglow', label: 'Glow', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.9] },
+    ],
+  },
+  {
+    id: 'bloomring',
+    name: 'Bloom Mandala',
+    kind: 'scene',
+    icon: '🌸',
+    frag: bloomringFrag,
+    cost: 1,
+    params: [
+      { type: 'slider', id: 'bsegments', label: 'Petals', min: 3, max: 20, step: 1, default: 8, surprise: [5, 14] },
+      { type: 'slider', id: 'bdrive', label: 'Music Drive', min: 0, max: 1.5, step: 0.01, default: 1, surprise: [0.7, 1.4] },
+      { type: 'slider', id: 'bpetal', label: 'Petal Depth', min: 0, max: 2, step: 0.01, default: 1, surprise: [0.4, 1.7] },
+      { type: 'slider', id: 'bspin2', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0.25, surprise: [-0.7, 0.7], integrate: true },
+      { type: 'slider', id: 'bbreath', label: 'Breathing', min: 0, max: 1, step: 0.01, default: 0.5 },
+      { type: 'slider', id: 'bglow2', label: 'Glow', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.9] },
+    ],
+  },
+  {
+    id: 'pulsewave',
+    name: 'Pulse Waves',
+    kind: 'scene',
+    icon: '💥',
+    frag: pulsewaveFrag,
+    cost: 1,
+    params: [
+      { type: 'slider', id: 'pcount', label: 'Waves', min: 2, max: 10, step: 1, default: 5, surprise: [3, 8] },
+      { type: 'slider', id: 'pdrive', label: 'Music Drive', min: 0, max: 1.5, step: 0.01, default: 1, surprise: [0.7, 1.4] },
+      { type: 'slider', id: 'prate', label: 'Wave Speed', min: 0.1, max: 2.5, step: 0.01, default: 1, surprise: [0.5, 1.8], integrate: true },
+      { type: 'slider', id: 'pthick', label: 'Thickness', min: 0.3, max: 3, step: 0.01, default: 1, surprise: [0.5, 2] },
+      { type: 'slider', id: 'pwarp', label: 'Warp', min: 0, max: 2, step: 0.01, default: 0.7, surprise: [0.2, 1.6] },
+      { type: 'slider', id: 'pglow', label: 'Glow', min: 0, max: 1, step: 0.01, default: 0.55, surprise: [0.2, 0.9] },
     ],
   },
   {
@@ -735,6 +786,7 @@ const RESERVED_UNIFORMS = new Set([
   'texel',
   'frame',
   'audio',
+  'audioAmt',
   'palShift',
   'palSpread',
   'lodScale',

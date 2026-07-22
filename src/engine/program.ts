@@ -14,7 +14,8 @@ uniform float u_time;
 uniform vec2 u_res;
 uniform vec2 u_texel;
 uniform float u_frame;
-uniform vec4 u_audio; // bass, mid, treble, beat (0..1)
+uniform vec4 u_audio;      // bass, mid, treble, beat (0..1), unscaled
+uniform float u_audioAmt;  // master Audio Reactivity, 0..1
 uniform float u_palShift;  // global Colour Speed scroll, applied inside pal()
 uniform float u_palSpread; // global Colour Spread, applied inside pal()
 uniform float u_lodScale;  // 0..1 Shader Detail; scene params are u_<paramId>

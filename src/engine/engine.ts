@@ -217,6 +217,7 @@ export class Engine {
     p.set1f('u_frame', this.frameIdx);
     const a = this.audio;
     p.set4f('u_audio', a.bass, a.mid, a.treble, a.beat);
+    p.set1f('u_audioAmt', this.getState().audio.amount);
     p.set1f('u_palShift', this.palShift);
     p.set1f('u_palSpread', this.palSpread);
     p.set1f('u_lodScale', this.detailScale * (this.autoAdjust ? this.degradeScale : 1));
