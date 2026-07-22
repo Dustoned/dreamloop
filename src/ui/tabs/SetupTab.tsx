@@ -39,13 +39,13 @@ function PartySettings() {
   );
 }
 
-export function SetupTab({ advanced }: { advanced: boolean }) {
+export function SetupTab() {
   const quality = GLOBAL_PARAMS.find((p) => p.id === 'quality');
   return (
     <>
       <Section title="Performance">
         <PerformancePanel />
-        {advanced && quality && <AutoControl path="global.quality" def={quality} />}
+        {quality && <AutoControl path="global.quality" def={quality} />}
       </Section>
 
       <Section title="Controls" collapsible defaultOpen={false} hint="auto-hide, side">

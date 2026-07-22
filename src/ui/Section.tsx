@@ -22,7 +22,10 @@ export function Section({
   if (!collapsible) {
     return (
       <section class="panel-section">
-        <h3>{title}</h3>
+        <h3>
+          {title}
+          {hint && <span class="sec-hint">{hint}</span>}
+        </h3>
         {children}
       </section>
     );

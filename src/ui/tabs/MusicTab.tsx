@@ -3,11 +3,11 @@ import { Section } from '../Section';
 import { AudioPanel } from '../AudioPanel';
 import { AudioAmountSlider } from '../MacroSlider';
 
-export function MusicTab({ advanced }: { advanced: boolean }) {
+export function MusicTab() {
   return (
     <>
       <Section title="Source">
-        <AudioPanel compact={!advanced} />
+        <AudioPanel />
       </Section>
 
       <Section title="Reaction">

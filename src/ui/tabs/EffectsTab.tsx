@@ -45,23 +45,19 @@ function EffectCard({ id }: { id: string }) {
   );
 }
 
-export function EffectsTab({ advanced }: { advanced: boolean }) {
+export function EffectsTab() {
   useStructure();
-  if (!advanced) {
-    return (
-      <Section title="Tap to switch on">
-        <QuickEffects />
-        <p class="tab-note">
-          Switch to Advanced in the header to tune each effect&rsquo;s own settings.
-        </p>
-      </Section>
-    );
-  }
   return (
-    <Section title="Effect stack">
-      {store.state.effects.map((e) => (
-        <EffectCard key={e.id} id={e.id} />
-      ))}
-    </Section>
+    <>
+      <Section title="Quick toggles">
+        <QuickEffects />
+      </Section>
+
+      <Section title="Settings per effect" hint="open one to tune it">
+        {store.state.effects.map((e) => (
+          <EffectCard key={e.id} id={e.id} />
+        ))}
+      </Section>
+    </>
   );
 }

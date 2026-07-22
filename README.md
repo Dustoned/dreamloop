@@ -23,8 +23,8 @@ npm run build    # productie-build in dist/
   - **Fractal Voyage** — vier fold-varianten (Kali / Spiral / Burning / Triangle).
 - **Zoom-modi** op alle fractals: *Zoom In*, *Zoom Out*, *Ping-Pong* of *Hold* — blijf eindeloos inzoomen in plaats van er alleen doorheen vliegen.
 - **8 stapelbare effecten**: Echo & Trails (feedback), Kaleidoscope, Prism, Glow (bloom), Rainbow Cycle, Poster & Dither, Pixelate, Vignette & Grain.
-- **Bediening in vijf tabbladen** — Look (scene, presets, kleuren), Feel (5 macro-sliders + beeldregeling), Effects, Music en Setup — met een vaste voettekst waarin **Surprise Me**, Foto, Delen, Opslaan, Party en Fullscreen altijd bereikbaar blijven.
-- **Simple-modus** houdt het bij de macro's en één-tik effect-chips; **Advanced** opent elke parameter van elke scene en elk effect, plus eigen kleurenpaletten (2–4 kleuren, OKLab-interpolatie).
+- **Bediening in vijf tabbladen** — Look (scene, presets, kleuren), Feel (5 macro-sliders + alle scene-instellingen + beeldregeling), Effects (snelknoppen + instellingen per effect), Music en Setup — met een vaste voettekst waarin **Surprise Me**, Foto, Delen, Opslaan, Party en Fullscreen altijd bereikbaar blijven.
+- **Eén modus, alles zichtbaar.** Geen Simple/Advanced-schakelaar: elke parameter van elke scene en elk effect staat er gewoon, met de minder gebruikte groepen dichtgeklapt. Inclusief eigen kleurenpaletten (2–4 kleuren, OKLab-interpolatie).
 - **Globale beeldregeling** die op élke scene werkt: Colour Speed, Colour Spread, Brightness, Contrast, Saturation.
 - **Party Mode** 🎉: fullscreen, UI weg, en de visuals wisselen zichzelf — op de beat als er muziek speelt.
 - **Delen**: kopieer een link of compacte code; wie hem opent krijgt exact jouw visual.

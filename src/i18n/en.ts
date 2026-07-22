@@ -1,8 +1,6 @@
 /** Fixed UI strings. Param/effect labels live in the effect definitions. */
 export const T = {
   appName: 'Dreamloop',
-  simple: 'Simple',
-  advanced: 'Advanced',
   scene: 'Scene',
   playback: 'Playback',
   effects: 'Effects',

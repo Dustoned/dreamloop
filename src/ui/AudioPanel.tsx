@@ -72,7 +72,7 @@ function MappingChips() {
   );
 }
 
-export function AudioPanel({ compact = false }: { compact?: boolean }) {
+export function AudioPanel() {
   useAudio();
 
   const pickFile = () => {
@@ -89,7 +89,7 @@ export function AudioPanel({ compact = false }: { compact?: boolean }) {
   const active = audio.kind;
 
   return (
-    <div class={`audio-panel ${compact ? 'compact' : ''}`}>
+    <div class="audio-panel">
       <div class="audio-sources">
         <button class={`chip ${active === 'file' ? 'active' : ''}`} onClick={pickFile}>
           🎵 Music file
@@ -125,10 +125,8 @@ export function AudioPanel({ compact = false }: { compact?: boolean }) {
         </div>
       )}
 
-      {!compact && <MappingChips />}
-      {compact && active === 'none' && (
-        <div class="audio-hint">Let the visuals dance to your music</div>
-      )}
+      {active === 'none' && <div class="audio-hint">Let the visuals dance to your music</div>}
+      <MappingChips />
     </div>
   );
 }

@@ -13,31 +13,10 @@ import { openShareDialog } from './ShareDialog';
 import { doSurprise, toggleFullscreen } from './shortcuts';
 import { useSheet, SNAPS } from './useSheet';
 
-type Mode = 'simple' | 'advanced';
-
-function loadMode(): Mode {
-  try {
-    return localStorage.getItem('dreamloop.mode') === 'advanced' ? 'advanced' : 'simple';
-  } catch {
-    return 'simple';
-  }
-}
-
 export function Panel() {
-  const [mode, setMode] = useState<Mode>(loadMode);
   const [tab, setTab] = useState<TabId>(loadTab);
   const [collapsed, setCollapsed] = useState(false);
   const sheet = useSheet();
-  const advanced = mode === 'advanced';
-
-  const pickMode = (m: Mode) => {
-    setMode(m);
-    try {
-      localStorage.setItem('dreamloop.mode', m);
-    } catch {
-      /* ignore */
-    }
-  };
 
   const pickTab = (id: TabId) => {
     setTab(id);
@@ -74,14 +53,6 @@ export function Panel() {
 
       <header class="panel-header">
         <span class="panel-title">{T.appName}</span>
-        <div class="mode-toggle">
-          <button class={!advanced ? 'active' : ''} onClick={() => pickMode('simple')}>
-            {T.simple}
-          </button>
-          <button class={advanced ? 'active' : ''} onClick={() => pickMode('advanced')}>
-            {T.advanced}
-          </button>
-        </div>
         <button
           class="panel-collapse"
           onClick={() => setCollapsed(true)}
@@ -108,11 +79,11 @@ export function Panel() {
       </nav>
 
       <div class="panel-body">
-        {tab === 'look' && <LookTab advanced={advanced} />}
-        {tab === 'feel' && <FeelTab advanced={advanced} />}
-        {tab === 'effects' && <EffectsTab advanced={advanced} />}
-        {tab === 'music' && <MusicTab advanced={advanced} />}
-        {tab === 'setup' && <SetupTab advanced={advanced} />}
+        {tab === 'look' && <LookTab />}
+        {tab === 'feel' && <FeelTab />}
+        {tab === 'effects' && <EffectsTab />}
+        {tab === 'music' && <MusicTab />}
+        {tab === 'setup' && <SetupTab />}
       </div>
 
       <footer class="panel-footer">

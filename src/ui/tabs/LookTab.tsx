@@ -14,7 +14,7 @@ function shuffleColours(): void {
   });
 }
 
-export function LookTab({ advanced }: { advanced: boolean }) {
+export function LookTab() {
   return (
     <>
       <Section title="Scene">
@@ -26,7 +26,7 @@ export function LookTab({ advanced }: { advanced: boolean }) {
       </Section>
 
       <Section title="Colours">
-        <PalettePicker compact={!advanced} />
+        <PalettePicker />
         <button class="wide-btn" onClick={shuffleColours}>
           🎨 Shuffle colours
         </button>

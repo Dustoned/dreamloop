@@ -8,13 +8,13 @@ import { useStructure } from '../hooks/useParam';
 
 const IMAGE_PARAMS = ['brightness', 'contrast', 'saturation', 'colorspeed', 'colorspread'];
 
-export function FeelTab({ advanced }: { advanced: boolean }) {
+export function FeelTab() {
   useStructure();
   const sceneDef = effectById(store.state.scene);
 
   return (
     <>
-      <Section title="Quick feel">
+      <Section title="Quick feel" hint="a few sliders that move many things at once">
         <MacroSlider id="speed" label={T.speed} />
         <MacroSlider id="intensity" label={T.intensity} />
         <MacroSlider id="complexity" label={T.complexity} />
@@ -22,7 +22,7 @@ export function FeelTab({ advanced }: { advanced: boolean }) {
         <MacroSlider id="warp" label={T.warp} />
       </Section>
 
-      {advanced && sceneDef && (
+      {sceneDef && (
         <Section title={`${sceneDef.name} settings`}>
           {sceneDef.params.map((p) => (
             <AutoControl key={p.id} path={`scene.${sceneDef.id}.${p.id}`} def={p} />
