@@ -445,7 +445,7 @@ export const EFFECTS: EffectDef[] = [
       { type: 'slider', id: 'jmorph', label: 'Morph Speed', min: 0, max: 2, step: 0.01, default: 0.5, surprise: [0.15, 1.2], integrate: true },
       { type: 'slider', id: 'jpower', label: 'Power', min: 2, max: 8, step: 0.01, default: 2, surprise: [2, 5] },
       { type: 'slider', id: 'zspeed', label: 'Zoom Speed', min: 0, max: 2, step: 0.01, default: 0.5, activeWhen: { param: 'zmode', notEquals: 3, because: 'set Motion away from Hold' } },
-      { type: 'slider', id: 'basezoom', label: 'Zoom', min: -2, max: 8, step: 0.05, default: 0, surprise: [-1, 3] },
+      { type: 'slider', id: 'basezoom', label: 'Zoom', min: -2, max: 8, step: 0.05, default: 1.4, surprise: [0.8, 3] },
       { type: 'slider', id: 'jiters', label: 'Detail', min: 32, max: 300, step: 1, default: 140, surprise: [80, 240], perfScale: true },
       { type: 'slider', id: 'jglow', label: 'Filament Glow', min: 0, max: 1, step: 0.01, default: 0.6, surprise: [0.3, 1] },
       { type: 'slider', id: 'jspin', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0, surprise: [-0.5, 0.5], integrate: true },

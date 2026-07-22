@@ -64,7 +64,11 @@ void main() {
   // exactly self-similar under a factor of three. Measured against the running
   // image it is not: the wrap was the worst frame step in the entire cycle, 6.7x
   // the median. A dive with an eased pull-back has no wrap to give away.
-  float depth = diveCycle(u_mzoomPhase * 0.03) * 3.0;
+  //
+  // The dive starts partway in, not at zero. At depth 0 the camera sits 3.4 units
+  // out and the sponge is a small object adrift in black — most of the screen is
+  // empty, which is exactly what the far end of the cycle looked like.
+  float depth = 0.9 + diveCycle(u_mzoomPhase * 0.03) * 2.4;
   float zoom = exp2(-depth);
 
   vec2 sc = ctr(v_uv) * 1.7;
@@ -79,7 +83,6 @@ void main() {
   float lvl = 0.0;
   float steps = 0.0;
   float maxD = 9.0 * zoom;
-  float eps = 0.0009 * zoom;
 
   mat2 rstep = rot2(u_mtwist * 0.5);
   int MARCH = marchSteps(34, 90);
@@ -89,6 +92,10 @@ void main() {
     float tr, lv;
     float d = de(p, rstep, tr, lv);
     glow += exp(-abs(d) / (0.03 * zoom));
+    // Stop at one pixel's worth of distance rather than a fixed epsilon: a
+    // constant threshold resolves far-away detail finer than the screen can show
+    // it, and that is what turned the sponge into sparkling noise.
+    float eps = max(0.0009 * zoom, dist * 0.7 / u_res.y);
     if (d < eps) {
       hit = dist;
       trap = tr;
