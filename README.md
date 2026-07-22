@@ -1,5 +1,7 @@
 # 🌀 Dreamloop
 
+**▶️ Speel er direct mee: [dustoned.github.io/dreamloop](https://dustoned.github.io/dreamloop/)**
+
 Maak psychedelische visuals met sliders, kleuren en stapelbare effecten — direct in je browser. Audio-reactief: laat de beelden dansen op je muziek.
 
 ## Starten
