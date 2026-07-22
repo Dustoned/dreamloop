@@ -100,6 +100,8 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
   // The track cannot move during a pointer-captured drag, so measure it once on
   // press instead of forcing a layout on every pointermove.
   const rect = useRef<{ left: number; width: number } | null>(null);
+  /** Touch only: where the finger landed, until we know it is a drag not a scroll. */
+  const pending = useRef<{ x: number; y: number } | null>(null);
   const setFromClient = (clientX: number) => {
     const r = rect.current ?? track.current!.getBoundingClientRect();
     const next = fromT(def, (clientX - r.left) / r.width);
@@ -110,14 +112,19 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
   };
 
   const nudge = (dir: number, big: boolean) => {
-    store.set(path, fromT(def, toT(def, value) + dir * (big ? 0.1 : 0.02)));
+    // Always move at least one step: 2% of a 3..24 range rounds back to the same
+    // integer, so the arrow keys did nothing at all on every whole-number slider.
+    const byFraction = fromT(def, toT(def, value) + dir * (big ? 0.1 : 0.02));
+    const step = def.step ?? 0;
+    const byStep = step > 0 ? value + dir * step * (big ? 5 : 1) : byFraction;
+    const next = Math.abs(byFraction - value) >= Math.abs(byStep - value) ? byFraction : byStep;
+    store.set(path, Math.min(def.max, Math.max(def.min, next)));
   };
 
   return (
     <div
       class={`ctl slider ${inactive ? 'ctl-inactive' : ''}`}
       tabIndex={0}
-      onDblClick={() => store.set(path, def.default)}
       onKeyDown={(e) => {
         if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
           nudge(1, e.shiftKey);
@@ -128,7 +135,15 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
         }
       }}
     >
-      <div class="ctl-row">
+      <div
+        class="ctl-row"
+        // Double-click resets to the default — but the music button lives in this
+        // same row, so double-clicking it used to throw the value away silently.
+        onDblClick={(e) => {
+          if ((e.target as HTMLElement).closest('.mod-btn, .mod-popover')) return;
+          store.set(path, def.default);
+        }}
+      >
         <span class="ctl-label">{def.label}</span>
         <button
           class={`mod-btn ${linked ? 'linked' : ''}`}
@@ -148,19 +163,44 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
         class="slider-track"
         ref={track}
         onPointerDown={(e) => {
-          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
           const r = track.current!.getBoundingClientRect();
           rect.current = { left: r.left, width: r.width };
+          if (e.pointerType === 'touch') {
+            // Hold off: a finger landing here may be starting a scroll. Commit on
+            // the first sideways move, or on release if it turns out to be a tap.
+            pending.current = { x: e.clientX, y: e.clientY };
+            return;
+          }
+          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
           setFromClient(e.clientX);
         }}
         onPointerMove={(e) => {
-          if ((e.currentTarget as HTMLElement).hasPointerCapture(e.pointerId))
-            setFromClient(e.clientX);
+          const el = e.currentTarget as HTMLElement;
+          const p = pending.current;
+          if (p) {
+            const dx = Math.abs(e.clientX - p.x);
+            const dy = Math.abs(e.clientY - p.y);
+            if (dy > dx && dy > 6) {
+              pending.current = null; // vertical: let the panel scroll
+              return;
+            }
+            if (dx < 6) return;
+            pending.current = null;
+            try {
+              el.setPointerCapture(e.pointerId);
+            } catch {
+              /* capture is an optimisation, not a requirement */
+            }
+          }
+          if (el.hasPointerCapture(e.pointerId)) setFromClient(e.clientX);
         }}
-        onPointerUp={() => {
+        onPointerUp={(e) => {
+          if (pending.current) setFromClient(e.clientX); // a plain tap on the track
+          pending.current = null;
           rect.current = null;
         }}
         onPointerCancel={() => {
+          pending.current = null;
           rect.current = null;
         }}
       >

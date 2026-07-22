@@ -73,6 +73,9 @@ body {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  /* Reserve the scrollbar's width always, or every control shifts sideways the
+     moment a tab becomes long enough to scroll. */
+  scrollbar-gutter: stable;
   padding: 4px 16px 12px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
@@ -301,9 +304,14 @@ body {
 /* A control that is a no-op in the current mode: dimmed, still usable, with the
    reason spelled out so it doesn't read as broken. */
 .ctl-inactive > .ctl-row > .ctl-label,
-.ctl-inactive > .ctl-row > .ctl-value,
 .ctl-inactive > .slider-track {
-  opacity: 0.42;
+  opacity: 0.5;
+}
+
+/* The number is already the dimmest text in the panel; fading it further made it
+   unreadable rather than merely inactive. */
+.ctl-inactive > .ctl-row > .ctl-value {
+  opacity: 0.8;
 }
 
 .ctl-note {
@@ -376,7 +384,10 @@ body {
   border-radius: 13px;
   background: var(--track);
   cursor: pointer;
-  touch-action: none;
+  /* Vertical swipes belong to the panel's scroller; only sideways drags are ours.
+     With touch-action: none a slider swallowed the gesture and the body could not
+     be scrolled past it at all. */
+  touch-action: pan-y;
 }
 
 .slider-fill {
@@ -444,7 +455,11 @@ body {
 }
 
 .segmented button {
-  flex: 1;
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   padding: 7px 4px;
   border: 1px solid var(--panel-border);
   background: var(--card-bg);
@@ -775,6 +790,13 @@ input[type='color'] {
   flex-direction: column;
   gap: 8px;
   z-index: 50;
+  /* Only the toast itself should take clicks; the strip must never cover the
+     buttons underneath it. */
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
 }
 
 .toast {
@@ -1574,5 +1596,29 @@ body.no-webgl {
   }
   50% {
     background-position: 100% 50%;
+  }
+}
+
+/* ---------- Overlays vs the mobile sheet ----------
+   Toasts and the first-run hint are pinned to the bottom of the screen, which on a
+   phone is exactly where the sheet's action row lives. Lift them above it. */
+@media (max-width: 719px) {
+  .toasts,
+  .hint-pill {
+    bottom: auto;
+    top: 16px;
+  }
+
+  .toasts {
+    top: 60px; /* clear of the hint pill when both are up */
+  }
+}
+
+/* iOS Safari zooms the whole page in when a focused input is under 16px, and it
+   never zooms back out. */
+@media (pointer: coarse) {
+  .dialog input,
+  .dialog textarea {
+    font-size: 16px;
   }
 }

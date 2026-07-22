@@ -21,6 +21,9 @@ export function Panel() {
   const pickTab = (id: TabId) => {
     setTab(id);
     saveTab(id);
+    // At the peek snap the body is folded away, so switching tabs there changed
+    // nothing you could see. Choosing a tab is a request to look at it.
+    if (sheet.active && sheet.snap === 0) sheet.open();
   };
 
   if (collapsed) {

@@ -31,15 +31,26 @@ export function togglePause(): void {
 
 export function togglePanel(): void {
   setUiPref('hidden', !uiPrefs.hidden);
-  if (uiPrefs.hidden) showToast('Controls hidden — press H to bring them back.');
+  // The H key is not available on a phone, and this state used to persist, so
+  // hiding the controls there was a one-way door out of the whole interface.
+  // The toast now carries the way back, and the state no longer survives a reload.
+  if (uiPrefs.hidden) {
+    showToast('Controls hidden.', { label: 'Show', fn: () => setUiPref('hidden', false) });
+  }
 }
 
 export function installShortcuts(): void {
   window.addEventListener('keydown', (e) => {
-    const tag = (e.target as HTMLElement | null)?.tagName;
-    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    const el = e.target as HTMLElement | null;
+    const tag = el?.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || el?.isContentEditable) return;
+    // Leave the browser's own shortcuts alone: Ctrl+R used to randomise the visual
+    // on its way to reloading, and Ctrl+F went fullscreen instead of opening find.
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
     switch (e.code) {
       case 'Space':
+        // Space on a focused button must press that button, not pause the visual.
+        if (tag === 'BUTTON' || el?.getAttribute('role') === 'button') return;
         togglePause();
         e.preventDefault();
         break;
@@ -108,7 +119,17 @@ export function installAutoHide(): void {
     if (uiPrefs.autoHide) timer = setTimeout(hide, uiPrefs.hideDelay * 1000);
   };
 
-  addEventListener('pointermove', wake, { passive: true });
+  addEventListener(
+    'pointermove',
+    () => {
+      // A press held deliberately still — parking a slider at a value to watch the
+      // result — is not an abandoned press. Refresh the clock while it keeps
+      // producing moves, so only a truly lost pointerup expires.
+      if (heldSince > 0) heldSince = performance.now();
+      wake();
+    },
+    { passive: true },
+  );
   addEventListener('pointerdown', () => {
     heldSince = performance.now();
     wake();

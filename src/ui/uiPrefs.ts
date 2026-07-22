@@ -26,7 +26,11 @@ function load(): UiPrefs {
       autoHide: p.autoHide !== false,
       hideDelay: typeof p.hideDelay === 'number' ? Math.min(60, Math.max(2, p.hideDelay)) : 8,
       side: p.side === 'left' ? 'left' : 'right',
-      hidden: p.hidden === true,
+      // Deliberately NOT restored. Hiding the controls removes the panel and its
+      // pill both, and the only documented way back is the H key — which a phone
+      // does not have. Persisting that bricked the interface until you cleared the
+      // site data. A reload now always gives you the controls back.
+      hidden: false,
     };
   } catch {
     return { ...DEFAULTS };
