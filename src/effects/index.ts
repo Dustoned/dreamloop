@@ -16,6 +16,9 @@ import fractalcoreFrag from './scenes/fractalcore.frag?raw';
 import nebulaFrag from './scenes/nebula.frag?raw';
 import mandelzoomFrag from './scenes/mandelzoom.frag?raw';
 import mandelbulbFrag from './scenes/mandelbulb.frag?raw';
+import juliamorphFrag from './scenes/juliamorph.frag?raw';
+import infinityboxFrag from './scenes/infinitybox.frag?raw';
+import apollonianFrag from './scenes/apollonian.frag?raw';
 import echoFrag from './post/echo.frag?raw';
 import huecycleFrag from './post/huecycle.frag?raw';
 import finalFrag from './post/final.frag?raw';
@@ -379,6 +382,49 @@ export const EFFECTS: EffectDef[] = [
     ],
   },
   {
+    id: 'juliamorph',
+    name: 'Julia Morph',
+    kind: 'scene',
+    icon: '🫧',
+    frag: juliamorphFrag,
+    cost: 3,
+    params: [
+      {
+        type: 'select',
+        id: 'jpath',
+        label: 'Shape Path',
+        options: [
+          { value: 0, label: 'Circle' },
+          { value: 1, label: 'Cardioid' },
+          { value: 2, label: 'Figure 8' },
+          { value: 3, label: 'Wander' },
+        ],
+        default: 1,
+        surprise: true,
+      },
+      {
+        type: 'select',
+        id: 'zmode',
+        label: 'Motion',
+        options: [
+          { value: 0, label: 'Zoom In' },
+          { value: 1, label: 'Zoom Out' },
+          { value: 2, label: 'Ping-Pong' },
+          { value: 3, label: 'Hold' },
+        ],
+        default: 3,
+        surprise: true,
+      },
+      { type: 'slider', id: 'jmorph', label: 'Morph Speed', min: 0, max: 2, step: 0.01, default: 0.5, surprise: [0.15, 1.2] },
+      { type: 'slider', id: 'jpower', label: 'Power', min: 2, max: 8, step: 0.01, default: 2, surprise: [2, 5] },
+      { type: 'slider', id: 'zspeed', label: 'Zoom Speed', min: 0, max: 2, step: 0.01, default: 0.5 },
+      { type: 'slider', id: 'basezoom', label: 'Zoom', min: -2, max: 8, step: 0.05, default: 0, surprise: [-1, 3] },
+      { type: 'slider', id: 'jiters', label: 'Detail', min: 32, max: 300, step: 1, default: 140, surprise: [80, 240] },
+      { type: 'slider', id: 'jglow', label: 'Filament Glow', min: 0, max: 1, step: 0.01, default: 0.6, surprise: [0.3, 1] },
+      { type: 'slider', id: 'jspin', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0, surprise: [-0.5, 0.5] },
+    ],
+  },
+  {
     id: 'mandelbulb',
     name: 'Mandelbulb',
     kind: 'scene',
@@ -405,6 +451,49 @@ export const EFFECTS: EffectDef[] = [
       { type: 'slider', id: 'bdist', label: 'Distance', min: 1.4, max: 4, step: 0.01, default: 2.1, surprise: [1.6, 3] },
       { type: 'slider', id: 'biters', label: 'Detail', min: 4, max: 12, step: 1, default: 8 },
       { type: 'slider', id: 'bglow', label: 'Inner Glow', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.9] },
+    ],
+  },
+  {
+    id: 'infinitybox',
+    name: 'Infinity Box',
+    kind: 'scene',
+    icon: '📦',
+    frag: infinityboxFrag,
+    cost: 3,
+    params: [
+      {
+        type: 'select',
+        id: 'mvariant',
+        label: 'Structure',
+        options: [
+          { value: 0, label: 'Sponge' },
+          { value: 1, label: 'Lattice' },
+          { value: 2, label: 'Blocks' },
+        ],
+        default: 0,
+        surprise: true,
+      },
+      { type: 'slider', id: 'mzoom', label: 'Endless Zoom', min: 0, max: 2, step: 0.01, default: 0.8, surprise: [0.3, 1.5] },
+      { type: 'slider', id: 'moffset', label: 'Hole Size', min: 0.6, max: 1.6, step: 0.005, default: 1, surprise: [0.75, 1.4] },
+      { type: 'slider', id: 'mtwist', label: 'Twist', min: -1, max: 1, step: 0.01, default: 0, surprise: [-0.7, 0.7] },
+      { type: 'slider', id: 'miters', label: 'Detail', min: 3, max: 10, step: 1, default: 6, surprise: [4, 8] },
+      { type: 'slider', id: 'mglow', label: 'Glow', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.9] },
+    ],
+  },
+  {
+    id: 'apollonian',
+    name: 'Apollonian',
+    kind: 'scene',
+    icon: '⭕',
+    frag: apollonianFrag,
+    cost: 3,
+    params: [
+      { type: 'slider', id: 'ascale', label: 'Packing', min: 1.1, max: 2.2, step: 0.005, default: 1.35, surprise: [1.2, 1.9] },
+      { type: 'slider', id: 'azoom', label: 'Endless Zoom', min: 0, max: 2, step: 0.01, default: 0.8, surprise: [0.3, 1.5] },
+      { type: 'slider', id: 'athick', label: 'Bubble Size', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.9] },
+      { type: 'slider', id: 'aiters', label: 'Detail', min: 4, max: 12, step: 1, default: 8, surprise: [5, 11] },
+      { type: 'slider', id: 'aspin', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0.3, surprise: [-0.8, 0.8] },
+      { type: 'slider', id: 'aglow', label: 'Glow', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.9] },
     ],
   },
   {

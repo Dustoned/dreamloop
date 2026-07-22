@@ -215,6 +215,87 @@ export const BUILTIN_PRESETS: BuiltinPreset[] = [
     },
   },
   {
+    id: 'mandel-dive',
+    name: 'Mandel Dive',
+    icon: '🔍',
+    state: {
+      scene: 'mandelzoom',
+      palette: { preset: 'sunset', stops: ['#2d1b69', '#e91e8c', '#ff6b35', '#ffd23f'] },
+      effects: fx({ glow: true }),
+      params: {
+        'scene.mandelzoom.zmode': 2,
+        'scene.mandelzoom.zspeed': 0.6,
+        'scene.mandelzoom.trapmix': 0.4,
+        'scene.mandelzoom.iters': 240,
+        'fx.glow.bintensity': 0.6,
+        'global.colorspread': 1.6,
+      },
+    },
+  },
+  {
+    id: 'endless-box',
+    name: 'Endless Box',
+    icon: '📦',
+    state: {
+      scene: 'infinitybox',
+      palette: { preset: 'toxic', stops: ['#050a02', '#7dff00', '#eaff70', '#1a3a00'] },
+      effects: fx({ echo: true, glow: true }),
+      params: {
+        'scene.infinitybox.mzoom': 0.9,
+        'scene.infinitybox.mtwist': 0.3,
+        'fx.echo.persist': 0.45,
+        'fx.glow.bintensity': 0.8,
+      },
+    },
+  },
+  {
+    id: 'bubble-cathedral',
+    name: 'Bubble Cathedral',
+    icon: '⭕',
+    state: {
+      scene: 'apollonian',
+      palette: { preset: 'candy', stops: ['#ffd1e8', '#b8f2d9', '#d9c8ff', '#ffe9b8'] },
+      effects: fx({ echo: true, glow: true }),
+      params: {
+        'scene.apollonian.ascale': 1.5,
+        'scene.apollonian.azoom': 0.7,
+        'fx.glow.bintensity': 0.9,
+        'fx.echo.persist': 0.4,
+      },
+    },
+  },
+  {
+    id: 'neon-julia',
+    name: 'Neon Julia',
+    icon: '🫧',
+    state: {
+      scene: 'juliamorph',
+      palette: { preset: 'neon', stops: ['#0a0014', '#ff00cc', '#00ffee', '#faff00'] },
+      effects: fx({ glow: true, prism: true }),
+      params: {
+        'scene.juliamorph.jmorph': 0.7,
+        'scene.juliamorph.jglow': 0.8,
+        'fx.glow.bintensity': 1,
+        'fx.prism.pstrength': 0.3,
+      },
+    },
+  },
+  {
+    id: 'alien-bulb',
+    name: 'Alien Bulb',
+    icon: '🧿',
+    state: {
+      scene: 'mandelbulb',
+      palette: { preset: 'aurora', stops: ['#02102a', '#00c896', '#7a3fe0', '#8ef0d2'] },
+      effects: fx({ glow: true }),
+      params: {
+        'scene.mandelbulb.bmorph': 0.5,
+        'scene.mandelbulb.bdist': 1.9,
+        'fx.glow.bintensity': 1.1,
+      },
+    },
+  },
+  {
     id: 'aurora-sky',
     name: 'Aurora',
     icon: '🌠',

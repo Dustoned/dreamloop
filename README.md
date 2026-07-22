@@ -12,10 +12,19 @@ npm run build    # productie-build in dist/
 
 ## Wat kan het?
 
-- **10 scenes**: Plasma Waves, Infinite Tunnel, Mandala, Liquid Marble, Fractal Voyage, Wave Interference, Stardust, Sacred Geometry, Organic Cells en Living Tissue (echte Gray-Scott reactie-diffusie).
+- **18 scenes.** Vlakke patronen (Plasma Waves, Wave Interference, Sacred Geometry, Liquid Marble, Organic Cells, Stardust, Living Tissue), 3D-werelden waar je doorheen vliegt (Wormhole, Fractal Core, Nebula, Infinite Tunnel, Mandala) en **zes echte fractals**:
+  - **Deep Zoom** — Mandelbrot/Burning Ship/Tricorn/Celtic/Phoenix met vier beroemde duikpunten, instelbare macht en Julia-blend.
+  - **Julia Morph** — Julia-set waarvan de vorm continu langs een pad verandert.
+  - **Mandelbulb** — 3D-fractal met instelbare macht (verandert de hele creatuur) en orbit/zoom-camera.
+  - **Infinity Box** — Menger-spons met een écht eindeloze, naadloze zoom.
+  - **Apollonian** — oneindig gestapelde glanzende bollen, ook eindeloos zoombaar.
+  - **Fractal Voyage** — vier fold-varianten (Kali / Spiral / Burning / Triangle).
+- **Zoom-modi** op alle fractals: *Zoom In*, *Zoom Out*, *Ping-Pong* of *Hold* — blijf eindeloos inzoomen in plaats van er alleen doorheen vliegen.
 - **8 stapelbare effecten**: Echo & Trails (feedback), Kaleidoscope, Prism, Glow (bloom), Rainbow Cycle, Poster & Dither, Pixelate, Vignette & Grain.
-- **Simple-modus**: scene-kiezer, 4 macro-sliders (Speed / Intensity / Complexity / Audio Reactivity), kleurthema's en een grote **Surprise Me**-knop.
+- **Simple-modus**: scene-kiezer, preset-rij, **5 macro-sliders** (Speed / Intensity / Complexity / Zoom / Warp), één-tik effect-chips, kleurthema's + shuffle, audiobron en een grote **Surprise Me**-knop.
 - **Advanced-modus**: elke parameter van elke scene en elk effect, plus eigen kleurenpaletten (2–4 kleuren, OKLab-interpolatie).
+- **Globale beeldregeling** die op élke scene werkt: Colour Speed, Colour Spread, Brightness, Contrast, Saturation.
+- **Elke slider kan op de muziek reageren**: klik op het ♪-knopje naast een slider, kies Bass/Mid/Treble/Beat en hoeveel. De koppeling gaat mee in presets en deel-codes.
 - **Audio-reactief**: sleep een muziekbestand op de pagina, deel tab-audio (Spotify/YouTube) of gebruik de microfoon. Bass → puls, beat → flits, treble → sparkle.
 - **Party Mode** 🎉: fullscreen, UI verdwijnt, en de visuals wisselen vanzelf — op de beat als er muziek speelt.
 - **Delen**: kopieer een link of compacte code; wie hem opent krijgt exact jouw visual.

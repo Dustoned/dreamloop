@@ -25,6 +25,7 @@ function stripDefaults(s: ParamState): Record<string, unknown> {
     if (d.params[k] !== v) params[k] = v;
   }
   const out: Record<string, unknown> = { v: s.v, scene: s.scene, params };
+  if (Object.keys(s.mods).length) out.mods = s.mods;
   if (JSON.stringify(s.effects) !== JSON.stringify(d.effects)) out.effects = s.effects;
   if (JSON.stringify(s.palette) !== JSON.stringify(d.palette)) out.palette = s.palette;
   if (JSON.stringify(s.macros) !== JSON.stringify(d.macros)) out.macros = s.macros;
