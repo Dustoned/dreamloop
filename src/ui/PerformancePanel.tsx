@@ -9,6 +9,12 @@ const PRESETS = [
   { label: 'High', quality: 1 },
 ];
 
+/** Asking for a quality clears any penalty the monitor applied — the user wins. */
+function setQuality(q: number): void {
+  perfMonitor.restore();
+  store.set('global.quality', q);
+}
+
 export function PerformancePanel() {
   const quality = (useParam('global.quality') as number) ?? 1;
   const [live, setLive] = useState({ fps: 60, degrade: 1 });
@@ -23,7 +29,7 @@ export function PerformancePanel() {
 
   const effective = Math.round(quality * live.degrade * 100);
   const fps = Math.round(live.fps);
-  const held = live.degrade < 0.99;
+  const held = live.degrade < 0.98;
 
   return (
     <div class="perf-panel">
@@ -37,17 +43,23 @@ export function PerformancePanel() {
           <button
             key={p.label}
             class={Math.abs(quality - p.quality) < 0.03 ? 'active' : ''}
-            onClick={() => store.set('global.quality', p.quality)}
+            onClick={() => setQuality(p.quality)}
           >
             {p.label}
           </button>
         ))}
       </div>
 
+      {held && (
+        <button class="wide-btn restore-btn" onClick={() => perfMonitor.restore()}>
+          ↑ Back to full sharpness
+        </button>
+      )}
+
       <p class="perf-note">
         {held
-          ? 'Your device is being given an easier time automatically. Pick Low above if it still stutters.'
-          : 'Running at the quality you chose. If things stutter, the app lowers this by itself.'}
+          ? 'Quality was turned down automatically because frames were dropping. Tap above to undo it.'
+          : 'Running at the quality you chose. If it starts to stutter, this lowers itself and tells you.'}
       </p>
     </div>
   );

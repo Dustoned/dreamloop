@@ -206,7 +206,10 @@ export class Engine {
     // Canvas backing store at CSS size × (capped) dpr. The CSS size comes from a
     // ResizeObserver rather than clientWidth, because reading that every frame
     // forces a synchronous layout — expensive whenever the panel is animating.
-    const dpr = Math.min(window.devicePixelRatio || 1, this.dprCap);
+    // Choosing full Quality overrides the device guess: if that guess is wrong,
+    // the user would otherwise be stuck with a soft picture and no way out.
+    const wantsSharp = num(st.params['global.quality'], 1) >= 0.9;
+    const dpr = Math.min(window.devicePixelRatio || 1, wantsSharp ? 2 : this.dprCap);
     const cw = Math.max(2, Math.round(this.cssW * dpr));
     const ch = Math.max(2, Math.round(this.cssH * dpr));
     if (canvas.width !== cw || canvas.height !== ch) {

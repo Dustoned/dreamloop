@@ -1,6 +1,7 @@
 import { useRef, useState } from 'preact/hooks';
 import type { AudioBand, SliderParam } from '../../state/types';
 import { store } from '../../state/paramStore';
+import { perfMonitor } from '../../engine/perf';
 import { useParam } from '../hooks/useParam';
 
 function toT(def: SliderParam, v: number): number {
@@ -92,7 +93,11 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
   const rect = useRef<{ left: number; width: number } | null>(null);
   const setFromClient = (clientX: number) => {
     const r = rect.current ?? track.current!.getBoundingClientRect();
-    store.set(path, fromT(def, (clientX - r.left) / r.width));
+    const next = fromT(def, (clientX - r.left) / r.width);
+    // Asking for a quality must also clear any automatic reduction, or the
+    // slider appears to do nothing.
+    if (path === 'global.quality') perfMonitor.restore();
+    store.set(path, next);
   };
 
   const nudge = (dir: number, big: boolean) => {

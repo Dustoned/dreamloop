@@ -76,10 +76,13 @@ if (glc) {
       __engine?: Engine;
       __store?: typeof store;
       __audio?: typeof audio;
+      __perf?: typeof perfMonitor;
     };
     w.__engine = engine;
     w.__store = store;
     w.__audio = audio;
+    // The real instance: a dynamic import from the console would give a second copy.
+    w.__perf = perfMonitor;
     // Deterministic frame pump: a hidden preview pane throttles timers and never
     // fires rAF, so verification drives the engine directly instead of waiting.
     (w as unknown as { __pump: (n?: number, dt?: number) => number }).__pump = (
@@ -153,6 +156,10 @@ if (glc) {
     lastFrame = 0;
     perf.reset();
   });
+
+  // Scene switches, preset loads and Surprise Me all cost one expensive frame on
+  // any machine. Those are not evidence that the device is slow.
+  store.subscribeStructure(() => perf.ignoreFrames(25));
 
   // Losing the GPU context leaves a permanently black canvas otherwise; on weak
   // devices a long heavy shader can genuinely trigger a driver reset.
