@@ -46,7 +46,9 @@ void main() {
   float dist = 0.0;
   float glow = 0.0;
   float hit = -1.0;
+  int MARCH = marchSteps(20, 48);
   for (int i = 0; i < 48; i++) {
+    if (i >= MARCH) break;
     vec3 p = ro + rd * dist;
     float d = wall(p);
     glow += exp(-abs(d) * 6.0);

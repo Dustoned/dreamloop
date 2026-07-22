@@ -78,7 +78,9 @@ void main() {
   float eps = 0.0009 * zoom;
 
   mat2 rstep = rot2(u_mtwist * 0.5);
+  int MARCH = marchSteps(34, 90);
   for (int i = 0; i < 90; i++) {
+    if (i >= MARCH) break;
     vec3 p = ro + rd * dist;
     float tr, lv;
     float d = de(p, rstep, tr, lv);

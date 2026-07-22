@@ -53,8 +53,10 @@ export class Engine {
   audio: AudioFrame = { bass: 0, mid: 0, treble: 0, beat: 0 };
   /** Extra internal-resolution factor set by the auto-degrade logic (perf.ts). */
   degradeScale = 1;
-  /** devicePixelRatio ceiling, from the device profile. */
-  dprCap = 2;
+  /** Whether the user has opted into automatic quality reduction at all. */
+  private autoAdjust = false;
+  /** The user's own Shader Detail dial. */
+  private detailScale = 1;
   /** True while the active scene's shader is still linking. */
   compiling = false;
   private cssW: number;
@@ -124,10 +126,13 @@ export class Engine {
       switch (pd.type) {
         case 'slider': {
           let x = this.modulated(st, prefix + pd.id, v as number, pd.min, pd.max, def, pd.id);
-          if (pd.perfScale && this.degradeScale < 1) {
+          // Shader Detail is the user's own dial; auto-adjust only joins in when
+          // they have asked for it.
+          const detail = this.detailScale * (this.autoAdjust ? this.degradeScale : 1);
+          if (pd.perfScale && detail < 1) {
             // Ease toward the cheap end; cost-3 scenes give up detail fastest.
             const give = def.cost >= 3 ? 1 : 0.6;
-            const k = 1 - (1 - this.degradeScale) * give;
+            const k = 1 - (1 - detail) * give;
             x = pd.min + (x - pd.min) * k;
             if (pd.step && pd.step >= 1) x = Math.max(pd.min, Math.round(x));
           }
@@ -184,6 +189,7 @@ export class Engine {
     p.set4f('u_audio', a.bass, a.mid, a.treble, a.beat);
     p.set1f('u_palShift', this.palShift);
     p.set1f('u_palSpread', this.palSpread);
+    p.set1f('u_detail', this.detailScale * (this.autoAdjust ? this.degradeScale : 1));
   }
 
   /** pulse, flash, sparkle — mapping toggles scaled by the master amount. */
@@ -203,13 +209,12 @@ export class Engine {
     const canvas = glc.canvas;
     const st = this.getState();
 
-    // Canvas backing store at CSS size × (capped) dpr. The CSS size comes from a
+    // Canvas backing store at CSS size × dpr. The CSS size comes from a
     // ResizeObserver rather than clientWidth, because reading that every frame
     // forces a synchronous layout — expensive whenever the panel is animating.
-    // Choosing full Quality overrides the device guess: if that guess is wrong,
-    // the user would otherwise be stuck with a soft picture and no way out.
-    const wantsSharp = num(st.params['global.quality'], 1) >= 0.9;
-    const dpr = Math.min(window.devicePixelRatio || 1, wantsSharp ? 2 : this.dprCap);
+    // No device guess is applied here any more: the Resolution setting is the
+    // single thing that decides how many pixels get rendered.
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const cw = Math.max(2, Math.round(this.cssW * dpr));
     const ch = Math.max(2, Math.round(this.cssH * dpr));
     if (canvas.width !== cw || canvas.height !== ch) {
@@ -224,6 +229,8 @@ export class Engine {
     this.time += dt * num(st.params['global.speed'], 1);
     this.palShift += dt * num(st.params['global.colorspeed'], 0);
     this.palSpread = num(st.params['global.colorspread'], 1);
+    this.autoAdjust = st.params['global.autoquality'] === true;
+    this.detailScale = num(st.params['global.detail'], 1);
 
     // Palette LUT rebuild on change.
     const palKey = st.palette.stops.join(',');
@@ -233,10 +240,16 @@ export class Engine {
     }
 
     // Internal resolution. The scale is quantised to 5% steps so that dragging the
-    // Quality slider does not reallocate every texture on every frame; quantising
-    // the factor rather than the pixel counts keeps the aspect ratio exact.
-    const rawScale = num(st.params['global.quality'], 1) * this.degradeScale;
-    const scale = Math.max(0.15, Math.round(rawScale * 20) / 20);
+    // Resolution slider does not reallocate every texture on every frame;
+    // quantising the factor rather than the pixel counts keeps the aspect exact.
+    // Above 100% this supersamples, which is sharper than the display itself.
+    const auto = this.autoAdjust ? this.degradeScale : 1;
+    const rawScale = num(st.params['global.quality'], 1) * auto;
+    let scale = Math.max(0.15, Math.round(rawScale * 20) / 20);
+    // Guard rail: never allocate more than ~17M pixels per target, whatever the
+    // slider says, or a big screen at 200% would exhaust memory.
+    const maxPixels = 17e6;
+    if (cw * ch * scale * scale > maxPixels) scale = Math.sqrt(maxPixels / (cw * ch));
     const iw = Math.max(64, Math.round(cw * scale));
     const ih = Math.max(64, Math.round(ch * scale));
     this.sceneRT.resize(iw, ih);

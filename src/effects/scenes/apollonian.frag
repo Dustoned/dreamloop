@@ -52,7 +52,9 @@ void main() {
   float maxD = 6.0 * zoom;
   float eps = 0.0007 * zoom;
 
+  int MARCH = marchSteps(30, 80);
   for (int i = 0; i < 80; i++) {
+    if (i >= MARCH) break;
     vec3 p = ro + rd * dist;
     float tr, g;
     float d = de(p, tr, g);

@@ -44,6 +44,14 @@ float fbm(vec2 p, int oct) {
   return v;
 }
 
+/**
+ * Raymarch step budget for the current Shader Detail setting. The loop keeps its
+ * constant bound (drivers need that); this just ends it early.
+ */
+int marchSteps(int lo, int hi) {
+  return int(mix(float(lo), float(hi), clamp(u_detail, 0.0, 1.0)) + 0.5);
+}
+
 mat2 rot2(float a) {
   float c = cos(a);
   float s = sin(a);

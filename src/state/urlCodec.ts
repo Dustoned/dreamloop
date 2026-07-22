@@ -17,11 +17,18 @@ function fromBase64url(code: string): Uint8Array {
   return out;
 }
 
+/**
+ * Performance settings belong to a machine, not to a look. Sending yours along
+ * would force your resolution onto whoever opens the link.
+ */
+const LOCAL_ONLY = new Set(['global.quality', 'global.detail', 'global.autoquality']);
+
 /** Keep only values that differ from the defaults — codes stay short. */
 function stripDefaults(s: ParamState): Record<string, unknown> {
   const d = buildDefaultState();
   const params: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(s.params)) {
+    if (LOCAL_ONLY.has(k)) continue;
     if (d.params[k] !== v) params[k] = v;
   }
   const out: Record<string, unknown> = { v: s.v, scene: s.scene, params };

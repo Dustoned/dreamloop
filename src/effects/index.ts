@@ -82,7 +82,20 @@ export const GLOBAL_PARAMS: ParamDef[] = [
     default: 1,
     surprise: [0.7, 1.5],
   },
-  { type: 'slider', id: 'quality', label: 'Quality', min: 0.25, max: 1, step: 0.05, default: 1 },
+  // Performance knobs. These are yours to set — nothing overrides them unless you
+  // switch the auto-adjust below back on. 100% resolution means one rendered pixel
+  // per screen pixel; above that is supersampling, which looks sharper still.
+  {
+    type: 'slider',
+    id: 'quality',
+    label: 'Resolution',
+    min: 0.25,
+    max: 2,
+    step: 0.05,
+    default: 1,
+  },
+  { type: 'slider', id: 'detail', label: 'Shader Detail', min: 0.3, max: 1, step: 0.05, default: 1 },
+  { type: 'toggle', id: 'autoquality', label: 'Auto-lower when slow', default: false },
 ];
 
 export const EFFECTS: EffectDef[] = [

@@ -92,7 +92,9 @@ void main() {
   float trap = 0.0;
   float steps = 0.0;
   if (t1 > 0.0) {
+    int MARCH = marchSteps(28, 72);
     for (int i = 0; i < 72; i++) {
+      if (i >= MARCH) break;
       vec3 p = ro + rd * dist;
       float tr;
       float d = bulbDE(p, power, iters, tr);

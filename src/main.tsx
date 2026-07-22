@@ -56,17 +56,20 @@ try {
 let pumpClock = performance.now();
 
 if (glc) {
-  // Pick safe starting settings for this machine before the first frame is drawn.
+  // The device profile now only chooses a first-visit starting point. Once you
+  // have set anything yourself, nothing here overrules you again.
   const device = detectDevice(glc.gl);
   glc.allowFloatTargets = device.useFloatTargets;
   glc.useInvalidate = device.useInvalidate;
-  if (!isReturningVisitor) store.set('global.quality', device.startQuality);
+  if (!isReturningVisitor) {
+    store.set('global.quality', device.startQuality);
+    store.set('global.autoquality', device.tier !== 'high');
+  }
   // Drop the frosted-glass blur, which the GPU would otherwise recompute over the
   // live canvas every frame.
   if (device.tier === 'low') document.body.classList.add('cheap-ui');
 
   const engine = new Engine(glc, () => store.state);
-  engine.dprCap = device.dprCap;
   registerEngine(engine);
   // Link the rest of the shaders while the browser is idle, so switching scenes
   // later never pays the compile cost.

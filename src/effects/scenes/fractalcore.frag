@@ -58,7 +58,9 @@ void main() {
   float trap = 0.0;
   float steps = 0.0;
   mat2 rm = rot2(rotA);
+  int MARCH = marchSteps(24, 64);
   for (int i = 0; i < 64; i++) {
+    if (i >= MARCH) break;
     vec3 p = ro + rd * dist;
     float tr;
     float d = de(p, rm, tr);

@@ -1,10 +1,8 @@
 import { useEffect, useReducer } from 'preact/hooks';
-import { GLOBAL_PARAMS } from '../../effects';
 import { party } from '../../party/partyMode';
 import { Section } from '../Section';
 import { PerformancePanel } from '../PerformancePanel';
 import { DisplaySettings } from '../DisplaySettings';
-import { AutoControl } from '../controls/AutoControl';
 
 const INTERVALS = [
   { sec: 30, label: '30s' },
@@ -40,12 +38,10 @@ function PartySettings() {
 }
 
 export function SetupTab() {
-  const quality = GLOBAL_PARAMS.find((p) => p.id === 'quality');
   return (
     <>
       <Section title="Performance">
         <PerformancePanel />
-        {quality && <AutoControl path="global.quality" def={quality} />}
       </Section>
 
       <Section title="Controls" collapsible defaultOpen={false} hint="auto-hide, side">

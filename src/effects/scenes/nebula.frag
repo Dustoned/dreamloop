@@ -16,7 +16,9 @@ void main() {
   float trans = 1.0;
   float z = 0.4;
   int oct = int(u_ndetail);
+  int MARCH = marchSteps(16, 40);
   for (int i = 0; i < 40; i++) {
+    if (i >= MARCH) break;
     vec3 p = ro + rd * z;
     float den = fbm3(p * 0.85, oct) - (0.92 - u_ndensity * 0.5);
     den = clamp(den * 3.2, 0.0, 1.0);
