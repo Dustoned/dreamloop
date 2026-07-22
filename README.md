@@ -51,11 +51,17 @@ Wil je het zelf bepalen: klik het **♪-knopje** naast élke slider, kies Bass/M
 
 Onder **Display** stel je in of de bediening vanzelf wegvalt (en na hoeveel seconden), en aan welke kant van het scherm hij staat.
 
-## Als het stroef loopt
+## Performance — jij bepaalt
 
-De app meet zichzelf en schaalt automatisch terug op een zwak apparaat. In het **Performance**-blokje zie je je huidige fps en kun je zelf Low / Medium / High kiezen.
+Onder **Setup → Performance** staan je huidige fps en drie regelaars die precies doen wat er staat:
 
-Technisch gebeurt er onder water nogal wat om haperingen te voorkomen: shaders worden op de achtergrond gebouwd en vooraf klaargezet (nooit midden in het tekenen), de kwaliteit zakt al na één slecht beeld, zware scenes leveren ook rekenwerk in en niet alleen resolutie, en het matglas-effect van het paneel gaat uit op touchapparaten.
+- **Resolution** (25–200%) — hoeveel pixels er gerenderd worden. 100% is één pixel per schermpixel; daarboven wordt gesupersampled, wat scherper is dan je scherm zelf.
+- **Shader Detail** (30–100%) — hoeveel rekenwerk de visuals doen. Verlaagt onder meer het aantal marcheerstappen van de 3D-scenes.
+- **Auto-lower when slow** — staat **uit** op capabele hardware. Zolang hij uit staat verandert er niets vanzelf; wat je instelt is wat je krijgt.
+
+De sneltoetsen Low / Medium / High / Ultra schrijven simpelweg dezelfde twee waarden. Automatische apparaatherkenning kiest alleen je *startpunt* bij een eerste bezoek en overrulet je daarna nooit meer. Deze instellingen reizen bewust **niet** mee in deel-links — die horen bij jouw machine, niet bij het beeld.
+
+Onder water gebeurt er verder van alles om haperingen te voorkomen: shaders worden op de achtergrond gebouwd en vooraf klaargezet (nooit midden in het tekenen), en het matglas-effect van het paneel gaat uit op touchapparaten.
 
 ## Techniek (kort)
 
