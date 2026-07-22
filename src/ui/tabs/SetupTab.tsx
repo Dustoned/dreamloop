@@ -1,0 +1,60 @@
+import { useEffect, useReducer } from 'preact/hooks';
+import { GLOBAL_PARAMS } from '../../effects';
+import { party } from '../../party/partyMode';
+import { Section } from '../Section';
+import { PerformancePanel } from '../PerformancePanel';
+import { DisplaySettings } from '../DisplaySettings';
+import { AutoControl } from '../controls/AutoControl';
+
+const INTERVALS = [
+  { sec: 30, label: '30s' },
+  { sec: 90, label: '90s' },
+  { sec: 180, label: '3m' },
+  { sec: 300, label: '5m' },
+];
+
+function PartySettings() {
+  const [, force] = useReducer<number, void>((c) => c + 1, 0);
+  useEffect(() => party.subscribe(() => force()), []);
+  return (
+    <>
+      <div class="ctl-row">
+        <span class="ctl-label">Switch every</span>
+      </div>
+      <div class="segmented">
+        {INTERVALS.map((o) => (
+          <button
+            key={o.sec}
+            class={party.intervalSec === o.sec ? 'active' : ''}
+            onClick={() => party.setInterval(o.sec)}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+      <button class="wide-btn" onClick={() => party.start()}>
+        🎉 Start Party Mode (P)
+      </button>
+    </>
+  );
+}
+
+export function SetupTab({ advanced }: { advanced: boolean }) {
+  const quality = GLOBAL_PARAMS.find((p) => p.id === 'quality');
+  return (
+    <>
+      <Section title="Performance">
+        <PerformancePanel />
+        {advanced && quality && <AutoControl path="global.quality" def={quality} />}
+      </Section>
+
+      <Section title="Controls" collapsible defaultOpen={false} hint="auto-hide, side">
+        <DisplaySettings />
+      </Section>
+
+      <Section title="Party Mode" collapsible defaultOpen={false} hint="auto-shuffle">
+        <PartySettings />
+      </Section>
+    </>
+  );
+}
