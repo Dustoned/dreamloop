@@ -17,7 +17,7 @@ uniform float u_frame;
 uniform vec4 u_audio; // bass, mid, treble, beat (0..1)
 uniform float u_palShift;  // global Colour Speed scroll, applied inside pal()
 uniform float u_palSpread; // global Colour Spread, applied inside pal()
-uniform float u_detail;    // 0..1 Shader Detail: scales raymarch step budgets
+uniform float u_lodScale;  // 0..1 Shader Detail; scene params are u_<paramId>
 uniform sampler2D u_palette;
 uniform sampler2D u_src;
 uniform sampler2D u_prev;

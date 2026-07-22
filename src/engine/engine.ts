@@ -74,22 +74,25 @@ export class Engine {
     this.bloomHalf = new PingPong(glc, 2, 2);
     this.palette = new PaletteTexture(glc);
 
+    // A zero size is never a real layout — it happens while the page is being
+    // restored, hidden, or moved between displays. Keeping the last good size
+    // avoids collapsing every render target to 2x2 and back.
     const canvas = glc.canvas;
-    this.cssW = canvas.clientWidth || window.innerWidth;
-    this.cssH = canvas.clientHeight || window.innerHeight;
+    this.cssW = canvas.clientWidth || window.innerWidth || 1280;
+    this.cssH = canvas.clientHeight || window.innerHeight || 720;
+    const adopt = (w: number, h: number): void => {
+      if (w > 0 && h > 0) {
+        this.cssW = w;
+        this.cssH = h;
+      }
+    };
     if (typeof ResizeObserver === 'function') {
       new ResizeObserver((entries) => {
         const r = entries[0]?.contentRect;
-        if (r && r.width > 0) {
-          this.cssW = r.width;
-          this.cssH = r.height;
-        }
+        if (r) adopt(r.width, r.height);
       }).observe(canvas);
     } else {
-      addEventListener('resize', () => {
-        this.cssW = canvas.clientWidth;
-        this.cssH = canvas.clientHeight;
-      });
+      addEventListener('resize', () => adopt(canvas.clientWidth, canvas.clientHeight));
     }
   }
 
@@ -189,7 +192,7 @@ export class Engine {
     p.set4f('u_audio', a.bass, a.mid, a.treble, a.beat);
     p.set1f('u_palShift', this.palShift);
     p.set1f('u_palSpread', this.palSpread);
-    p.set1f('u_detail', this.detailScale * (this.autoAdjust ? this.degradeScale : 1));
+    p.set1f('u_lodScale', this.detailScale * (this.autoAdjust ? this.degradeScale : 1));
   }
 
   /** pulse, flash, sparkle — mapping toggles scaled by the master amount. */

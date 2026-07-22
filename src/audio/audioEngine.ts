@@ -25,9 +25,31 @@ class AudioEngine {
   private listeners = new Set<() => void>();
 
   private sm = { bass: 0, mid: 0, treble: 0 };
+  /**
+   * Rolling loudness window per band, for the auto-gain in bands(). getByteFrequency
+   * maps -100..-30 dB onto 0..255, and ordinary music sits near the top of that
+   * for bass, so the raw value was pinned around 0.9 the whole time. Every
+   * bass-linked slider then sat at its maximum instead of moving with the music,
+   * which is what made the reactions feel violent even at low Audio Reactivity.
+   */
+  private gain = {
+    bass: { lo: 1, hi: 0 },
+    mid: { lo: 1, hi: 0 },
+    treble: { lo: 1, hi: 0 },
+  };
   private beatAvg = 0;
   private beatCooldown = 0;
   private beatEnv = 0;
+
+  /** Where `raw` sits between this band's recent quiet and loud, as 0..1. */
+  private agc(w: { lo: number; hi: number }, raw: number): number {
+    // Jump to a new extreme at once, drift back over ~15 s, so a loud drop is
+    // registered instantly but a quiet passage does not get amplified into noise.
+    w.hi = raw > w.hi ? raw : w.hi + (raw - w.hi) * 0.0011;
+    w.lo = raw < w.lo ? raw : w.lo + (raw - w.lo) * 0.0011;
+    if (w.hi < 0.02) return 0; // silence: nothing to normalise
+    return Math.min(1, Math.max(0, (raw - w.lo) / Math.max(w.hi - w.lo, 0.06)));
+  }
 
   subscribe(fn: () => void): () => void {
     this.listeners.add(fn);
@@ -169,6 +191,10 @@ class AudioEngine {
     this.trackName = '';
     this.error = '';
     this.frame.bass = this.frame.mid = this.frame.treble = this.frame.beat = 0;
+    // The next source has its own loudness; carrying this one's window over would
+    // mis-scale its first few seconds.
+    this.gain = { bass: { lo: 1, hi: 0 }, mid: { lo: 1, hi: 0 }, treble: { lo: 1, hi: 0 } };
+    this.beatAvg = 0;
     this.emit();
   }
 
@@ -194,15 +220,16 @@ class AudioEngine {
     const rawMid = avg(11, 86); // ~260-2000 Hz
     const rawTreble = avg(86, 513); // ~2-12 kHz
 
-    // fast attack, slow release
+    // Normalise against this track's own dynamics first, then smooth with a fast
+    // attack and slow release.
     const sm = (cur: number, raw: number) =>
       raw > cur ? cur + (raw - cur) * 0.55 : cur + (raw - cur) * 0.12;
-    this.sm.bass = sm(this.sm.bass, rawBass);
-    this.sm.mid = sm(this.sm.mid, rawMid);
-    this.sm.treble = sm(this.sm.treble, rawTreble);
+    this.sm.bass = sm(this.sm.bass, this.agc(this.gain.bass, rawBass));
+    this.sm.mid = sm(this.sm.mid, this.agc(this.gain.mid, rawMid));
+    this.sm.treble = sm(this.sm.treble, this.agc(this.gain.treble, rawTreble));
     f.bass = this.sm.bass;
     f.mid = this.sm.mid;
-    f.treble = Math.min(1, this.sm.treble * 2.2); // treble band is naturally quieter
+    f.treble = this.sm.treble;
 
     // beat: bass energy spike vs rolling average, with a refractory period
     this.beatAvg = this.beatAvg * 0.985 + rawBass * 0.015;

@@ -90,10 +90,15 @@ void main() {
   // ---- zoom schedule: 0 In, 1 Out, 2 Ping-Pong, 3 Hold ----------------------
   float base = clamp(u_basezoom, -2.0, ZLIMIT);
   float span = clamp(ZLIMIT - base, 0.0, 12.0);
+  // Looping dive, so Zoom In / Zoom Out keep moving instead of clamping to a
+  // standstill after the first minute.
+  float phase = u_time * u_zspeed * 0.25 / max(span, 0.001);
   float depth = base;
-  if (u_zmode < 0.5) depth += u_time * u_zspeed * 0.25;
-  else if (u_zmode < 1.5) depth -= u_time * u_zspeed * 0.25;
-  else if (u_zmode < 2.5) depth += (span * 0.5) * (1.0 - cos(u_time * u_zspeed * 0.12));
+  if (u_zmode < 0.5) depth += span * diveCycle(phase);
+  else if (u_zmode < 1.5) depth += span * (1.0 - diveCycle(phase));
+  // Frequency scaled by the span, so Zoom Speed means the same rate in every mode.
+  else if (u_zmode < 2.5)
+    depth += (span * 0.5) * (1.0 - cos(u_time * u_zspeed * 0.25 * PI / max(span, 0.001)));
   depth = clamp(depth, -2.0, ZLIMIT);
   float scale = exp2(-depth);
 

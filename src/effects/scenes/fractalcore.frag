@@ -5,6 +5,7 @@ uniform float u_fglow;
 uniform float u_fiter2;
 uniform float u_fmode;
 uniform float u_fspin;
+uniform float u_fwander;
 
 // Raymarched kaleidoscopic IFS in endlessly repeating space.
 // rm is computed once per frame in main(); calling rot2 here would burn a sin and
@@ -35,22 +36,34 @@ void main() {
 
   // Motion: Fly Through moves the camera; Zoom modes stay put and scale space,
   // which loops seamlessly because the fold repeats every 3 units.
-  float zoom = 1.0;
-  vec3 ro;
+  // This world is an endless 3-unit lattice: it repeats under translation, not
+  // under scaling. The old "zoom" modes scaled the ray direction, which
+  // normalize() divided straight back out, so all three rendered the identical
+  // picture. Travel is what this geometry actually offers, so that is what the
+  // modes now do — and every one of them runs forever without a seam.
+  // The old flight path ran down the z-axis, where this lattice leaves only 0.004
+  // units of clearance — after a few seconds the camera was inside the geometry
+  // and the screen went to a flat dark wall. The cell corner is a genuine open
+  // corridor: 0.65 units of clearance, and it holds across the whole Structure
+  // and Morph range, so the flight can run forever.
+  const vec2 CORRIDOR = vec2(1.5, 1.5);
+  float wander = clamp(u_fwander, 0.0, 0.35);
+  float z;
   if (u_fmode < 0.5) {
-    ro = vec3(0.45 * sin(t * 0.31), 0.45 * cos(t * 0.24), t);
+    z = t;                                  // Fly Through: forward, wandering
+  } else if (u_fmode < 1.5) {
+    z = t * 1.7;                            // Dive: same corridor, much faster
+  } else if (u_fmode < 2.5) {
+    z = -t;                                 // Reverse: pull back out
   } else {
-    float d = 0.0;
-    if (u_fmode < 1.5) d = fract(t * 0.12);
-    else if (u_fmode < 2.5) d = fract(-t * 0.12);
-    else d = 0.5 - 0.5 * cos(t * 0.4);
-    zoom = exp2(-d * 1.585); // log2(3): one full self-similar period
-    ro = vec3(0.45 * sin(u_time * 0.11), 0.45 * cos(u_time * 0.09), 0.0);
+    z = 4.5 * sin(t * 0.22);                // Drift: in and back out again
   }
+  vec3 ro = vec3(CORRIDOR + wander * vec2(sin(t * 0.31), cos(t * 0.24)), z);
+  float zoom = 1.0;
 
-  vec2 sc = ctr(v_uv) * 1.8 * zoom;
+  vec2 sc = ctr(v_uv) * 1.8;
   sc = rot2(sin(t * 0.2) * 0.4 + u_time * u_fspin * 0.2) * sc;
-  vec3 rd = normalize(vec3(sc, zoom));
+  vec3 rd = normalize(vec3(sc, 1.0));
 
   float dist = 0.0;
   float glow = 0.0;
@@ -59,27 +72,29 @@ void main() {
   float steps = 0.0;
   mat2 rm = rot2(rotA);
   int MARCH = marchSteps(24, 64);
+  float eps = 0.004 * zoom;   // stay a constant number of pixels wide as we dive
+  float maxD = 12.0 * zoom;
   for (int i = 0; i < 64; i++) {
     if (i >= MARCH) break;
     vec3 p = ro + rd * dist;
     float tr;
     float d = de(p, rm, tr);
-    glow += exp(-d * 14.0);
-    if (d < 0.004) {
+    glow += exp(-d * 14.0 / zoom);
+    if (d < eps) {
       hit = dist;
       trap = tr;
       steps = float(i);
       break;
     }
     dist += d * 0.85;
-    if (dist > 12.0) break;
+    if (dist > maxD) break;
   }
 
   vec3 col = vec3(0.0);
   if (hit > 0.0) {
     float ao = 1.0 - steps / 64.0; // step-count ambient occlusion
     col = pal(trap * 1.4 + u_time * 0.02);
-    col *= ao * (0.45 + 1.2 * exp(-hit * 0.28));
+    col *= ao * (0.45 + 1.2 * exp(-hit * 0.28 / zoom));
   }
   col += pal(0.1 + trap * 0.4 + u_time * 0.025) * glow * u_fglow * 0.008;
   fragColor = vec4(col, 1.0);

@@ -298,6 +298,20 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* A control that is a no-op in the current mode: dimmed, still usable, with the
+   reason spelled out so it doesn't read as broken. */
+.ctl-inactive .ctl-label,
+.ctl-inactive .ctl-value,
+.ctl-inactive .slider-track {
+  opacity: 0.42;
+}
+
+.ctl-note {
+  font-size: 0.82em;
+  color: var(--text-dim);
+  margin: -2px 0 6px;
+}
+
 .mod-btn {
   border: none;
   background: none;

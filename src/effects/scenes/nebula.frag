@@ -4,6 +4,28 @@ uniform float u_ndetail;
 uniform float u_nstars;
 uniform float u_ncontrast;
 
+/**
+ * fbm that gives up as soon as the octaves still to come cannot possibly lift the
+ * sum to the cloud threshold. The remaining amplitudes of a halving series sum to
+ * the current one, so `v + amp` is a true upper bound on the final value — the
+ * early exit costs no accuracy at all.
+ *
+ * Most of a nebula is empty sky, and the old version paid the full octave count
+ * for every one of those samples. That was the whole reason this scene crawled.
+ */
+float gas(vec3 p, int oct, float thresh) {
+  float v = 0.0;
+  float amp = 0.5;
+  for (int i = 0; i < 6; i++) {
+    if (i >= oct) break;
+    v += amp * vnoise3(p);
+    if (v + amp < thresh) return 0.0;
+    p = vec3(mat2(1.6, 1.2, -1.2, 1.6) * p.xy, p.z * 2.1 + 7.7);
+    amp *= 0.5;
+  }
+  return v;
+}
+
 // Volumetric flight through fbm gas clouds, stars behind.
 void main() {
   vec2 sc = ctr(v_uv) * 1.6;
@@ -14,21 +36,25 @@ void main() {
 
   vec3 col = vec3(0.0);
   float trans = 1.0;
-  float z = 0.4;
+  // Per-pixel start offset: with the longer strides below, an aligned start would
+  // show up as concentric shells. Noise turns that into film grain instead.
+  float z = 0.4 + hash21(gl_FragCoord.xy) * 0.3;
   int oct = int(u_ndetail);
-  int MARCH = marchSteps(16, 40);
-  for (int i = 0; i < 40; i++) {
+  float thresh = 0.92 - u_ndensity * 0.5;
+  int MARCH = marchSteps(14, 34);
+  for (int i = 0; i < 34; i++) {
     if (i >= MARCH) break;
     vec3 p = ro + rd * z;
-    float den = fbm3(p * 0.85, oct) - (0.92 - u_ndensity * 0.5);
-    den = clamp(den * 3.2, 0.0, 1.0);
+    float den = clamp((gas(p * 0.85, oct, thresh) - thresh) * 3.2, 0.0, 1.0);
     if (den > 0.01) {
       vec3 c = pal(den * 1.1 + z * 0.07 + u_time * 0.015);
-      col += c * (den * den * 0.7 + den * 0.5) * trans * 0.34;
+      col += c * (den * den * 0.7 + den * 0.5) * trans * 0.4;
       trans *= 1.0 - den * 0.3;
       if (trans < 0.04) break;
+      z += 0.26;
+    } else {
+      z += 0.46;   // nothing here: stride on
     }
-    z += 0.24;
   }
 
   // stars shining through the gaps

@@ -47,12 +47,20 @@ vec2 diveCenter(float which) {
 
 void main() {
   // ---- zoom schedule: 0 In, 1 Out, 2 Ping-Pong, 3 Hold ---------------------
+  // The dive covers a fixed span and then loops. Running the depth off a bare
+  // clock instead used to clamp at the precision limit, so after a minute or two
+  // Zoom In and Zoom Out simply stopped moving and never started again.
   float base = clamp(u_basezoom, 0.0, ZLIMIT);
-  float span = max(ZLIMIT - base, 0.0);
+  float span = min(ZLIMIT - base, 13.0);   // 13 octaves ~ 8000x, still crisp in fp32
+  float phase = u_time * u_zspeed * 0.25 / max(span, 0.001);
   float depth = base;
-  if (u_zmode < 0.5) depth += u_time * u_zspeed * 0.25;
-  else if (u_zmode < 1.5) depth -= u_time * u_zspeed * 0.25;
-  else if (u_zmode < 2.5) depth += (span * 0.5) * (1.0 - cos(u_time * u_zspeed * 0.12));
+  if (u_zmode < 0.5) depth += span * diveCycle(phase);
+  else if (u_zmode < 1.5) depth += span * (1.0 - diveCycle(phase));
+  // Ping-Pong used a fixed frequency, so over a 13-octave span it travelled about
+  // three times faster than Zoom In at the same Zoom Speed. Tying the frequency to
+  // the span makes one slider mean one speed in every mode.
+  else if (u_zmode < 2.5)
+    depth += (span * 0.5) * (1.0 - cos(u_time * u_zspeed * 0.25 * PI / max(span, 0.001)));
   depth = clamp(depth, 0.0, ZLIMIT);
   float scale = exp2(-depth);
 

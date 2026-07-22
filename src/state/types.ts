@@ -25,6 +25,12 @@ export interface SliderParam extends ParamBase {
    * a struggling device does less shader work, not just fewer pixels.
    */
   perfScale?: boolean;
+  /**
+   * This control only does anything while a sibling select has some other value —
+   * Zoom Speed does nothing while Motion is on Hold, for instance. The UI dims it
+   * and says why, instead of leaving you with a slider that appears broken.
+   */
+  activeWhen?: { param: string; notEquals: number; because: string };
 }
 
 export interface ColorParam extends ParamBase {

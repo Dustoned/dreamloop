@@ -56,7 +56,10 @@ void main() {
   if (u_bcam < 0.5) {
     orbMul = 1.0;                                                       // Orbit
   } else if (u_bcam < 1.5) {
-    camDist = mix(farD, nearD, 1.0 - exp(-u_time * u_bspeed * 0.09));   // Zoom In
+    // Looping approach. The old exponential ease crept toward nearD and then sat
+    // there for good, so after half a minute "Zoom In" was indistinguishable
+    // from Hold.
+    camDist = mix(farD, nearD, diveCycle(u_time * u_bspeed * 0.035));   // Zoom In
   } else if (u_bcam < 2.5) {
     camDist = mix(farD, nearD, 0.5 - 0.5 * cos(u_time * u_bspeed * 0.18)); // Ping-Pong
   }                                                                     // else Hold

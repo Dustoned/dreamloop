@@ -49,7 +49,21 @@ float fbm(vec2 p, int oct) {
  * constant bound (drivers need that); this just ends it early.
  */
 int marchSteps(int lo, int hi) {
-  return int(mix(float(lo), float(hi), clamp(u_detail, 0.0, 1.0)) + 0.5);
+  return int(mix(float(lo), float(hi), clamp(u_lodScale, 0.0, 1.0)) + 0.5);
+}
+
+/**
+ * Endless one-way travel through a structure that is NOT self-similar, so a plain
+ * fract() would jump. Returns 0->1 over most of the cycle, then races back to 0
+ * in the last stretch. A dive built on this never freezes at the end of its range
+ * and never cuts: it dives, whooshes back, and dives again.
+ */
+float diveCycle(float phase) {
+  const float RETURN = 0.09;               // fraction of the cycle spent rewinding
+  phase = fract(phase);
+  return phase < 1.0 - RETURN
+    ? phase / (1.0 - RETURN)
+    : 1.0 - (phase - (1.0 - RETURN)) / RETURN;
 }
 
 mat2 rot2(float a) {

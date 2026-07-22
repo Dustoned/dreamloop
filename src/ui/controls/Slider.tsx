@@ -88,6 +88,13 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
   const [modOpen, setModOpen] = useState(false);
   const linked = !!store.state.mods[path];
 
+  // Some sliders genuinely do nothing in certain modes (Zoom Speed while Motion
+  // is on Hold). Say so instead of leaving the user dragging a dead control.
+  const gate = def.activeWhen;
+  const gatePath = gate ? path.slice(0, path.lastIndexOf('.') + 1) + gate.param : '';
+  const gateValue = useParam(gatePath);
+  const inactive = !!gate && gateValue === gate.notEquals;
+
   // The track cannot move during a pointer-captured drag, so measure it once on
   // press instead of forcing a layout on every pointermove.
   const rect = useRef<{ left: number; width: number } | null>(null);
@@ -106,7 +113,7 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
 
   return (
     <div
-      class="ctl slider"
+      class={`ctl slider ${inactive ? 'ctl-inactive' : ''}`}
       tabIndex={0}
       onDblClick={() => store.set(path, def.default)}
       onKeyDown={(e) => {
@@ -133,6 +140,7 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
         </button>
         <span class="ctl-value">{fmt(def, value)}</span>
       </div>
+      {inactive && <div class="ctl-note">No effect here — {gate!.because}.</div>}
       {modOpen && <ModPopover path={path} onClose={() => setModOpen(false)} />}
       <div
         class="slider-track"

@@ -11,17 +11,22 @@ uniform float u_kglow;
 // Kali-style IFS. The fold variant (u_kformula) changes the creature completely;
 // u_kmode chooses between drifting, endlessly zooming, or holding still.
 void main() {
-  // Zoom: In / Out / Ping-Pong / Hold. Self-similar, so a fract() cycle loops seamlessly.
+  // Zoom: In / Out / Ping-Pong / Hold, over a 2.5-octave range (~6x). The old
+  // version wrapped a single octave with fract() on the assumption that the fold
+  // is self-similar at 2x — it is not, so every lap ended in a visible jump.
+  #define KSPAN 2.5
   float depth = 0.0;
-  if (u_kmode < 0.5) depth = fract(u_time * u_journey * 0.06);
-  else if (u_kmode < 1.5) depth = fract(-u_time * u_journey * 0.06);
+  if (u_kmode < 0.5) depth = diveCycle(u_time * u_journey * 0.024);
+  else if (u_kmode < 1.5) depth = 1.0 - diveCycle(u_time * u_journey * 0.024);
   else if (u_kmode < 2.5) depth = 0.5 - 0.5 * cos(u_time * u_journey * 0.25);
-  float scale = exp2(-depth * 1.0);
+  float scale = exp2(-depth * KSPAN);
 
   vec2 p = ctr(v_uv) * 2.0 / u_kzoom * scale;
   p = rot2(u_time * u_kspin * 0.15) * p;
 
-  float t = u_time * 0.12 * (u_kmode < 3.5 ? 1.0 : 0.0);
+  // Hold parks the zoom; the shape keeps drifting slowly so it never freezes into
+  // a still image.
+  float t = u_time * 0.12;
   vec2 c = vec2(u_shapex + 0.13 * sin(t * 1.3), u_shapey + 0.13 * cos(t * 0.9));
 
   float trap = 1e9;
