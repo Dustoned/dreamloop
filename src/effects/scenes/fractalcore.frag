@@ -3,6 +3,8 @@ uniform float u_ffold;
 uniform float u_fwarp;
 uniform float u_fglow;
 uniform float u_fiter2;
+uniform float u_fmode;
+uniform float u_fspin;
 
 // Raymarched kaleidoscopic IFS in endlessly repeating space.
 float de(vec3 p, float rotA, out float trap) {
@@ -29,10 +31,25 @@ float de(vec3 p, float rotA, out float trap) {
 void main() {
   float t = u_time * u_ffly;
   float rotA = u_fwarp * (0.35 + 0.25 * sin(u_time * 0.13));
-  vec3 ro = vec3(0.45 * sin(t * 0.31), 0.45 * cos(t * 0.24), t);
-  vec2 sc = ctr(v_uv) * 1.8;
-  sc = rot2(sin(t * 0.2) * 0.4) * sc;
-  vec3 rd = normalize(vec3(sc, 1.0));
+
+  // Motion: Fly Through moves the camera; Zoom modes stay put and scale space,
+  // which loops seamlessly because the fold repeats every 3 units.
+  float zoom = 1.0;
+  vec3 ro;
+  if (u_fmode < 0.5) {
+    ro = vec3(0.45 * sin(t * 0.31), 0.45 * cos(t * 0.24), t);
+  } else {
+    float d = 0.0;
+    if (u_fmode < 1.5) d = fract(t * 0.12);
+    else if (u_fmode < 2.5) d = fract(-t * 0.12);
+    else d = 0.5 - 0.5 * cos(t * 0.4);
+    zoom = exp2(-d * 1.585); // log2(3): one full self-similar period
+    ro = vec3(0.45 * sin(u_time * 0.11), 0.45 * cos(u_time * 0.09), 0.0);
+  }
+
+  vec2 sc = ctr(v_uv) * 1.8 * zoom;
+  sc = rot2(sin(t * 0.2) * 0.4 + u_time * u_fspin * 0.2) * sc;
+  vec3 rd = normalize(vec3(sc, zoom));
 
   float dist = 0.0;
   float glow = 0.0;

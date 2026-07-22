@@ -55,6 +55,8 @@ export function makeSurprise(): ParamState {
     speed: 0.35 + rnd() * 0.3,
     intensity: 0.35 + rnd() * 0.4,
     complexity: 0.3 + rnd() * 0.5,
+    zoom: 0.25 + rnd() * 0.5,
+    warp: 0.2 + rnd() * 0.6,
   };
   s.audio = { ...store.state.audio, mappings: [...store.state.audio.mappings] };
   return s;

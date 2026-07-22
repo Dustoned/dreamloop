@@ -15,6 +15,8 @@ uniform vec2 u_res;
 uniform vec2 u_texel;
 uniform float u_frame;
 uniform vec4 u_audio; // bass, mid, treble, beat (0..1)
+uniform float u_palShift;  // global Colour Speed scroll, applied inside pal()
+uniform float u_palSpread; // global Colour Spread, applied inside pal()
 uniform sampler2D u_palette;
 uniform sampler2D u_src;
 uniform sampler2D u_prev;

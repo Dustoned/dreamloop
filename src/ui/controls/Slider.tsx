@@ -1,5 +1,5 @@
-import { useRef } from 'preact/hooks';
-import type { SliderParam } from '../../state/types';
+import { useRef, useState } from 'preact/hooks';
+import type { AudioBand, SliderParam } from '../../state/types';
 import { store } from '../../state/paramStore';
 import { useParam } from '../hooks/useParam';
 
@@ -24,10 +24,68 @@ function fmt(def: SliderParam, v: number): string {
   return v.toFixed(dec) + (def.unit ?? '');
 }
 
+const BANDS: { id: AudioBand; label: string }[] = [
+  { id: 'bass', label: 'Bass' },
+  { id: 'mid', label: 'Mid' },
+  { id: 'treble', label: 'Treble' },
+  { id: 'beat', label: 'Beat' },
+];
+
+function ModPopover({ path, onClose }: { path: string; onClose: () => void }) {
+  const mod = store.state.mods[path];
+  const [, force] = useState(0);
+  const set = (next: { src: AudioBand; amt: number } | null) => {
+    store.mutate((s) => {
+      if (next) s.mods[path] = next;
+      else delete s.mods[path];
+    });
+    force((n) => n + 1);
+  };
+  const cur = mod ?? { src: 'bass' as AudioBand, amt: 0.5 };
+  return (
+    <div class="mod-popover" onClick={(e) => e.stopPropagation()}>
+      <div class="mod-row">
+        {BANDS.map((b) => (
+          <button
+            key={b.id}
+            class={`chip ${mod && mod.src === b.id ? 'active' : ''}`}
+            onClick={() => set({ ...cur, src: b.id })}
+          >
+            {b.label}
+          </button>
+        ))}
+      </div>
+      <div class="mod-amount">
+        <span class="ctl-label">Amount</span>
+        <input
+          type="range"
+          min="-100"
+          max="100"
+          value={String(Math.round(cur.amt * 100))}
+          onInput={(e) =>
+            set({ ...cur, amt: Number((e.currentTarget as HTMLInputElement).value) / 100 })
+          }
+        />
+        <span class="ctl-value">{Math.round(cur.amt * 100)}%</span>
+      </div>
+      <div class="mod-row">
+        <button class="chip" onClick={() => set(null)}>
+          Unlink
+        </button>
+        <button class="chip" onClick={onClose}>
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function Slider({ path, def }: { path: string; def: SliderParam }) {
   const raw = useParam(path);
   const value = typeof raw === 'number' ? raw : def.default;
   const track = useRef<HTMLDivElement>(null);
+  const [modOpen, setModOpen] = useState(false);
+  const linked = !!store.state.mods[path];
 
   const setFromClient = (clientX: number) => {
     const r = track.current!.getBoundingClientRect();
@@ -55,8 +113,19 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
     >
       <div class="ctl-row">
         <span class="ctl-label">{def.label}</span>
+        <button
+          class={`mod-btn ${linked ? 'linked' : ''}`}
+          title={linked ? 'Reacts to the music' : 'Make this react to the music'}
+          onClick={(e) => {
+            e.stopPropagation();
+            setModOpen(!modOpen);
+          }}
+        >
+          ♪
+        </button>
         <span class="ctl-value">{fmt(def, value)}</span>
       </div>
+      {modOpen && <ModPopover path={path} onClose={() => setModOpen(false)} />}
       <div
         class="slider-track"
         ref={track}

@@ -45,6 +45,9 @@ export class Engine {
   private frameIdx = 0;
   /** Scaled time accumulator (global Speed applied CPU-side). */
   time = 0;
+  /** Global colour scroll + stretch, folded into every pal() lookup. */
+  private palShift = 0;
+  private palSpread = 1;
   /** Written by the audio module each frame; zeros when no source is active. */
   audio: AudioFrame = { bass: 0, mid: 0, treble: 0, beat: 0 };
   /** Extra internal-resolution factor set by the auto-degrade logic (perf.ts). */
@@ -87,7 +90,7 @@ export class Engine {
       const name = `u_${pd.id}`;
       switch (pd.type) {
         case 'slider':
-          p.set1f(name, v as number);
+          p.set1f(name, this.modulated(st, prefix + pd.id, v as number, pd.min, pd.max));
           break;
         case 'toggle':
           p.set1f(name, v ? 1 : 0);
@@ -104,6 +107,18 @@ export class Engine {
     }
   }
 
+  /**
+   * Apply a per-slider audio link. Computed here rather than written back to the
+   * store, so presets and share codes always capture the user's base setting.
+   */
+  private modulated(st: ParamState, path: string, base: number, min: number, max: number): number {
+    const mod = st.mods[path];
+    if (!mod) return base;
+    const level = this.audio[mod.src];
+    const v = base + mod.amt * level * (max - min) * st.audio.amount;
+    return Math.min(max, Math.max(min, v));
+  }
+
   private setStd(p: Program, w: number, h: number): void {
     p.set1f('u_time', this.time);
     p.set2f('u_res', w, h);
@@ -111,6 +126,8 @@ export class Engine {
     p.set1f('u_frame', this.frameIdx);
     const a = this.audio;
     p.set4f('u_audio', a.bass, a.mid, a.treble, a.beat);
+    p.set1f('u_palShift', this.palShift);
+    p.set1f('u_palSpread', this.palSpread);
   }
 
   /** pulse, flash, sparkle — mapping toggles scaled by the master amount. */
@@ -145,6 +162,8 @@ export class Engine {
     const dt = Math.min((nowMs - this.lastNow) / 1000, 0.1);
     this.lastNow = nowMs;
     this.time += dt * num(st.params['global.speed'], 1);
+    this.palShift += dt * num(st.params['global.colorspeed'], 0);
+    this.palSpread = num(st.params['global.colorspread'], 1);
 
     // Palette LUT rebuild on change.
     const palKey = st.palette.stops.join(',');
@@ -315,6 +334,12 @@ export class Engine {
     this.finalProg.set1f('u_enabled', finishOn ? 1 : 0);
     const [pulse, flash, sparkle] = this.audioFx(st);
     this.finalProg.set3f('u_audioFx', pulse, flash, sparkle);
+    this.finalProg.set3f(
+      'u_grade',
+      num(st.params['global.brightness'], 1),
+      num(st.params['global.contrast'], 1),
+      num(st.params['global.saturation'], 1),
+    );
     this.finalProg.bindTex('u_src', current.tex, 1);
     glc.drawFullscreen();
   }

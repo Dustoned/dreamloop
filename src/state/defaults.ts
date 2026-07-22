@@ -1,4 +1,4 @@
-import type { ParamDef, ParamState, ParamValue, AudioMapping } from './types';
+import type { ParamDef, ParamState, ParamValue, AudioMapping, AudioBand } from './types';
 import { EFFECTS, GLOBAL_PARAMS, DEFAULT_EFFECT_ORDER, DEFAULT_EFFECTS_ON, effectById } from '../effects';
 import { paletteById, PALETTES } from '../palette/palettes';
 
@@ -17,9 +17,10 @@ export function buildDefaultState(): ParamState {
     v: 1,
     scene: 'plasma',
     params,
+    mods: {},
     effects: DEFAULT_EFFECT_ORDER.map((id) => ({ id, on: DEFAULT_EFFECTS_ON.has(id) })),
     palette: { preset: 'neon', stops: [...paletteById('neon')!.stops] },
-    macros: { speed: 0.5, intensity: 0.5, complexity: 0.5 },
+    macros: { speed: 0.5, intensity: 0.5, complexity: 0.5, zoom: 0.5, warp: 0.5 },
     audio: { amount: 0.6, mappings: ['bassPulse', 'beatFlash'] },
   };
 }
@@ -53,6 +54,7 @@ function defForPath(path: string): ParamDef | undefined {
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 const MAPPINGS: AudioMapping[] = ['bassPulse', 'beatFlash', 'trebleSparkle'];
+const BANDS: AudioBand[] = ['bass', 'mid', 'treble', 'beat'];
 
 /**
  * Merge an untrusted partial snapshot (preset / URL code / localStorage) over
@@ -72,6 +74,17 @@ export function hydrate(partial: unknown): ParamState {
       if (!def) continue;
       const clamped = clampParam(def, v as ParamValue);
       if (clamped !== undefined) s.params[path] = clamped;
+    }
+  }
+
+  if (p.mods && typeof p.mods === 'object') {
+    for (const [path, m] of Object.entries(p.mods as Record<string, unknown>)) {
+      const def = defForPath(path);
+      if (def?.type !== 'slider') continue;
+      const mod = m as { src?: unknown; amt?: unknown };
+      if (!BANDS.includes(mod?.src as AudioBand)) continue;
+      if (typeof mod.amt !== 'number' || !isFinite(mod.amt)) continue;
+      s.mods[path] = { src: mod.src as AudioBand, amt: Math.min(1, Math.max(-1, mod.amt)) };
     }
   }
 
@@ -108,7 +121,7 @@ export function hydrate(partial: unknown): ParamState {
 
   const mac = p.macros as Record<string, unknown> | undefined;
   if (mac && typeof mac === 'object') {
-    for (const k of ['speed', 'intensity', 'complexity'] as const) {
+    for (const k of ['speed', 'intensity', 'complexity', 'zoom', 'warp'] as const) {
       const v = mac[k];
       if (typeof v === 'number' && isFinite(v)) s.macros[k] = Math.min(1, Math.max(0, v));
     }

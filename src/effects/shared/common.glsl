@@ -72,9 +72,12 @@ float fbm3(vec3 p, int oct) {
   return v;
 }
 
-/** Palette lookup; texture wraps, so t can be any float. */
+/**
+ * Palette lookup; the texture wraps, so t can be any float. Spread stretches the
+ * gradient across the value range, shift scrolls it (global Colour Speed).
+ */
 vec3 pal(float t) {
-  return texture(u_palette, vec2(t, 0.5)).rgb;
+  return texture(u_palette, vec2(t * u_palSpread + u_palShift, 0.5)).rgb;
 }
 
 float luma(vec3 c) {

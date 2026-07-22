@@ -53,6 +53,55 @@ const SCENE_COMPLEXITY: Record<string, Target[]> = {
     { path: 'scene.nebula.ndetail', map: (m) => Math.round(lerp(2, 5, m)) },
     { path: 'scene.nebula.ndensity', map: (m) => lerp(0.5, 1.35, m) },
   ],
+  mandelzoom: [{ path: 'scene.mandelzoom.iters', map: (m) => Math.round(lerp(80, 400, m)) }],
+  juliamorph: [{ path: 'scene.juliamorph.jiters', map: (m) => Math.round(lerp(48, 300, m)) }],
+  mandelbulb: [{ path: 'scene.mandelbulb.biters', map: (m) => Math.round(lerp(4, 12, m)) }],
+  infinitybox: [{ path: 'scene.infinitybox.miters', map: (m) => Math.round(lerp(3, 10, m)) }],
+  apollonian: [{ path: 'scene.apollonian.aiters', map: (m) => Math.round(lerp(4, 12, m)) }],
+};
+
+/** Zoom / depth per scene — the "get closer" control. */
+const SCENE_ZOOM: Record<string, Target[]> = {
+  plasma: [{ path: 'scene.plasma.scale', map: (m) => lerp(2.6, 0.35, m) }],
+  tunnel: [{ path: 'scene.tunnel.fog', map: (m) => lerp(0.95, 0.1, m) }],
+  mandala: [{ path: 'scene.mandala.suck', map: (m) => lerp(-0.9, 0.9, m) }],
+  marble: [{ path: 'scene.marble.mscale', map: (m) => lerp(2.8, 0.45, m) }],
+  kali: [{ path: 'scene.kali.kzoom', map: (m) => lerp(0.45, 2.8, m) }],
+  interference: [{ path: 'scene.interference.freq', map: (m) => lerp(18, 3, m) }],
+  stars: [{ path: 'scene.stars.starsize', map: (m) => lerp(0.6, 1.9, m) }],
+  geometry: [{ path: 'scene.geometry.gdensity', map: (m) => lerp(3.8, 1.1, m) }],
+  cells: [{ path: 'scene.cells.cellsize', map: (m) => lerp(0.6, 2.8, m) }],
+  tissue: [{ path: 'scene.tissue.tscale', map: (m) => lerp(0.55, 1.9, m) }],
+  wormhole: [{ path: 'scene.wormhole.wradius', map: (m) => lerp(1.9, 0.65, m) }],
+  fractalcore: [{ path: 'scene.fractalcore.ffold', map: (m) => lerp(1.55, 2.45, m) }],
+  nebula: [{ path: 'scene.nebula.ndensity', map: (m) => lerp(0.35, 1.45, m) }],
+  mandelzoom: [{ path: 'scene.mandelzoom.basezoom', map: (m) => lerp(0, 12, m) }],
+  juliamorph: [{ path: 'scene.juliamorph.basezoom', map: (m) => lerp(-2, 8, m) }],
+  mandelbulb: [{ path: 'scene.mandelbulb.bdist', map: (m) => lerp(3.8, 1.45, m) }],
+  infinitybox: [{ path: 'scene.infinitybox.moffset', map: (m) => lerp(0.65, 1.55, m) }],
+  apollonian: [{ path: 'scene.apollonian.ascale', map: (m) => lerp(1.15, 2.15, m) }],
+};
+
+/** Warp / twist — the "bend reality" control. */
+const SCENE_WARP: Record<string, Target[]> = {
+  plasma: [{ path: 'scene.plasma.wiggle', map: (m) => lerp(0, 2, m) }],
+  tunnel: [{ path: 'scene.tunnel.twist', map: (m) => lerp(-1, 1, m) }],
+  mandala: [{ path: 'scene.mandala.rotspeed', map: (m) => lerp(-1, 1, m) }],
+  marble: [{ path: 'scene.marble.swirl', map: (m) => lerp(0, 3, m) }],
+  kali: [{ path: 'scene.kali.kspin', map: (m) => lerp(-1, 1, m) }],
+  interference: [{ path: 'scene.interference.orbit', map: (m) => lerp(0, 2, m) }],
+  stars: [{ path: 'scene.stars.twinkle', map: (m) => m }],
+  geometry: [{ path: 'scene.geometry.grot', map: (m) => lerp(-1, 1, m) }],
+  cells: [{ path: 'scene.cells.smoothk', map: (m) => lerp(0.01, 0.3, m) }],
+  tissue: [{ path: 'scene.tissue.relief', map: (m) => m }],
+  wormhole: [{ path: 'scene.wormhole.wbank', map: (m) => m }],
+  fractalcore: [{ path: 'scene.fractalcore.fspin', map: (m) => lerp(-1, 1, m) }],
+  nebula: [{ path: 'scene.nebula.ndrift', map: (m) => lerp(0, 2, m) }],
+  mandelzoom: [{ path: 'scene.mandelzoom.spin', map: (m) => lerp(-1, 1, m) }],
+  juliamorph: [{ path: 'scene.juliamorph.jmorph', map: (m) => lerp(0, 2, m) }],
+  mandelbulb: [{ path: 'scene.mandelbulb.bmorph', map: (m) => m }],
+  infinitybox: [{ path: 'scene.infinitybox.mtwist', map: (m) => lerp(-1, 1, m) }],
+  apollonian: [{ path: 'scene.apollonian.aspin', map: (m) => lerp(-1, 1, m) }],
 };
 
 const INTENSITY: Target[] = [
@@ -60,6 +109,7 @@ const INTENSITY: Target[] = [
   { path: 'fx.echo.fzoom', map: (m) => lerp(0.1, 0.6, m) },
   { path: 'fx.glow.bintensity', map: (m) => lerp(0.3, 1.5, m) },
   { path: 'fx.finish.grain', map: (m) => lerp(0.02, 0.1, m) },
+  { path: 'global.contrast', map: (m) => lerp(0.85, 1.45, m) },
 ];
 
 /**
@@ -69,9 +119,24 @@ const INTENSITY: Target[] = [
  */
 export function applyMacro(id: keyof ParamState['macros'], m: number): void {
   store.setMacro(id, m);
+  const scene = store.state.scene;
   let targets: Target[];
-  if (id === 'speed') targets = [{ path: 'global.speed', map: (mm) => 0.15 + 2.1 * mm * mm }];
-  else if (id === 'intensity') targets = INTENSITY;
-  else targets = SCENE_COMPLEXITY[store.state.scene] ?? [];
+  switch (id) {
+    case 'speed':
+      targets = [{ path: 'global.speed', map: (mm) => 0.15 + 2.1 * mm * mm }];
+      break;
+    case 'intensity':
+      targets = INTENSITY;
+      break;
+    case 'complexity':
+      targets = SCENE_COMPLEXITY[scene] ?? [];
+      break;
+    case 'zoom':
+      targets = SCENE_ZOOM[scene] ?? [];
+      break;
+    case 'warp':
+      targets = SCENE_WARP[scene] ?? [];
+      break;
+  }
   for (const t of targets) store.set(t.path, t.map(m));
 }

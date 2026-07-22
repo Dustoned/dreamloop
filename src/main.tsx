@@ -48,6 +48,8 @@ try {
   glc = null;
 }
 
+let pumpClock = performance.now();
+
 if (glc) {
   const engine = new Engine(glc, () => store.state);
   if (import.meta.env.DEV) {
@@ -59,14 +61,38 @@ if (glc) {
     w.__engine = engine;
     w.__store = store;
     w.__audio = audio;
+    // Deterministic frame pump: a hidden preview pane throttles timers and never
+    // fires rAF, so verification drives the engine directly instead of waiting.
+    (w as unknown as { __pump: (n?: number, dt?: number) => number }).__pump = (
+      n = 60,
+      dt = 16.7,
+    ) => {
+      for (let i = 0; i < n; i++) {
+        pumpClock += dt;
+        audio.update();
+        engine.render(pumpClock);
+      }
+      return engine.time;
+    };
   }
 
-  // In dev, keep rendering (via setTimeout) even when the page reports hidden,
-  // so headless verification works. In production a hidden page pauses; the
-  // queued rAF fires again as soon as the page becomes visible.
+  // In dev the preview pane is often not composited, so requestAnimationFrame
+  // never fires and the loop would die for good. Race it against a timer —
+  // whichever wins drives the next frame. Production keeps plain rAF, so a
+  // hidden tab pauses and resumes on its own.
   const schedule = (cb: () => void): void => {
-    if (import.meta.env.DEV && document.hidden) setTimeout(cb, 33);
-    else requestAnimationFrame(cb);
+    if (!import.meta.env.DEV) {
+      requestAnimationFrame(cb);
+      return;
+    }
+    let fired = false;
+    const once = (): void => {
+      if (fired) return;
+      fired = true;
+      cb();
+    };
+    requestAnimationFrame(once);
+    setTimeout(once, 40);
   };
   engine.audio = audio.frame;
   const perf = new PerfMonitor();

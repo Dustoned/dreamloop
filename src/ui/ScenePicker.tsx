@@ -16,6 +16,11 @@ const THUMB_GRADIENTS: Record<string, string> = {
   wormhole: 'radial-gradient(circle at 50% 50%, #0a0014 8%, #7a3fe0 35%, #ff5fd0 60%, #12082a 90%)',
   fractalcore: 'conic-gradient(from 45deg, #00ffee, #0a0014, #ff00cc, #0a0014, #00ffee, #0a0014, #ff00cc, #0a0014, #00ffee)',
   nebula: 'radial-gradient(ellipse at 35% 40%, #e91e8c 0%, #7a3fe0 30%, #02102a 75%)',
+  mandelzoom: 'radial-gradient(circle at 62% 50%, #ffd23f 0%, #ff6b35 12%, #e91e8c 30%, #2d1b69 65%, #05010f 90%)',
+  mandelbulb: 'radial-gradient(circle at 40% 35%, #caf0f8 0%, #00d4d8 20%, #0077b6 45%, #001b3a 85%)',
+  juliamorph: 'radial-gradient(circle at 50% 50%, #faff00 0%, #ff00cc 25%, #00ffee 55%, #0a0014 88%)',
+  infinitybox: 'conic-gradient(from 0deg at 50% 50%, #7dff00, #050a02, #eaff70, #050a02, #7dff00, #050a02, #eaff70, #050a02, #7dff00)',
+  apollonian: 'radial-gradient(circle at 30% 30%, #ffe9b8 0%, #d9c8ff 18%, #b8f2d9 40%, #12082a 80%)',
 };
 
 export function ScenePicker() {

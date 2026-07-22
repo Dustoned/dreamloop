@@ -59,6 +59,14 @@ export interface EffectDef {
 
 export type AudioMapping = 'bassPulse' | 'beatFlash' | 'trebleSparkle';
 
+export type AudioBand = 'bass' | 'mid' | 'treble' | 'beat';
+
+/** Per-slider audio link: effective = base + amt * band * (max - min). */
+export interface ParamMod {
+  src: AudioBand;
+  amt: number;
+}
+
 /**
  * The single source of truth. UI edits it, the engine reads it every frame,
  * presets snapshot it, the URL codec compresses it, localStorage persists it.
@@ -69,9 +77,11 @@ export interface ParamState {
   v: 1;
   scene: string;
   params: Record<string, ParamValue>;
+  /** Sliders linked to the music, keyed by the same flat param path. */
+  mods: Record<string, ParamMod>;
   effects: { id: string; on: boolean }[];
   palette: { preset: string | null; stops: string[] };
-  macros: { speed: number; intensity: number; complexity: number };
+  macros: { speed: number; intensity: number; complexity: number; zoom: number; warp: number };
   audio: { amount: number; mappings: AudioMapping[] };
 }
 
