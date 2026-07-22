@@ -1,6 +1,9 @@
 import type { ComponentChildren } from 'preact';
 import { useState } from 'preact/hooks';
 
+/** Survives the unmount that a tab switch causes. */
+const sectionOpen = new Map<string, boolean>();
+
 /**
  * A titled group. Collapsible groups start closed for the secondary stuff, so a
  * tab opens showing only what matters rather than everything at once.
@@ -18,7 +21,14 @@ export function Section({
   defaultOpen?: boolean;
   hint?: string;
 }) {
-  const [open, setOpen] = useState(defaultOpen);
+  // Remembered per title, because switching tabs unmounts the whole body and a
+  // plain useState would collapse everything you had opened.
+  const [open, setOpen] = useState(() => sectionOpen.get(title) ?? defaultOpen);
+  const toggle = (): void => {
+    const next = !open;
+    sectionOpen.set(title, next);
+    setOpen(next);
+  };
   if (!collapsible) {
     return (
       <section class="panel-section">
@@ -32,7 +42,7 @@ export function Section({
   }
   return (
     <section class={`panel-section collapsible ${open ? 'open' : ''}`}>
-      <h3 onClick={() => setOpen(!open)}>
+      <h3 onClick={toggle}>
         <span class="sec-caret">{open ? '▾' : '▸'}</span>
         {title}
         {hint && !open && <span class="sec-hint">{hint}</span>}

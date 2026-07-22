@@ -59,11 +59,14 @@ int marchSteps(int lo, int hi) {
  * and never cuts: it dives, whooshes back, and dives again.
  */
 float diveCycle(float phase) {
-  const float RETURN = 0.09;               // fraction of the cycle spent rewinding
+  const float RETURN = 0.22;               // fraction of the cycle spent rewinding
   phase = fract(phase);
-  return phase < 1.0 - RETURN
-    ? phase / (1.0 - RETURN)
-    : 1.0 - (phase - (1.0 - RETURN)) / RETURN;
+  if (phase < 1.0 - RETURN) return phase / (1.0 - RETURN);
+  // Ease the way back. A linear return reversed direction at ten times the dive
+  // speed the instant it began and stopped just as abruptly; smoothstep has zero
+  // slope at both ends, so the pull-back swells and settles instead of snapping.
+  float u = (phase - (1.0 - RETURN)) / RETURN;
+  return 1.0 - smoothstep(0.0, 1.0, u);
 }
 
 mat2 rot2(float a) {

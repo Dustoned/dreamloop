@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
 import type { AudioBand, SliderParam } from '../../state/types';
 import { store } from '../../state/paramStore';
 import { perfMonitor } from '../../engine/perf';
@@ -23,6 +23,32 @@ function fmt(def: SliderParam, v: number): string {
   const step = def.step ?? 0.01;
   const dec = step >= 1 ? 0 : step >= 0.1 ? 1 : 2;
   return v.toFixed(dec) + (def.unit ?? '');
+}
+
+/**
+ * Which slider currently has its music popover open — at most one. Each Slider
+ * used to own a private flag, so several could stand open at once and nothing
+ * ever closed them; you had to find each one and click its note again.
+ */
+let openPath: string | null = null;
+const openWatchers = new Set<(p: string | null) => void>();
+
+function setOpenPath(next: string | null): void {
+  if (openPath === next) return;
+  openPath = next;
+  for (const fn of openWatchers) fn(next);
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener(
+    'pointerdown',
+    (e) => {
+      if (!openPath) return;
+      const t = e.target as HTMLElement | null;
+      if (!t?.closest('.mod-popover, .mod-btn')) setOpenPath(null);
+    },
+    true,
+  );
 }
 
 const BANDS: { id: AudioBand; label: string }[] = [
@@ -87,7 +113,12 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
   const raw = useParam(path);
   const value = typeof raw === 'number' ? raw : def.default;
   const track = useRef<HTMLDivElement>(null);
-  const [modOpen, setModOpen] = useState(false);
+  const [modOpen, setModOpen] = useState(() => openPath === path);
+  useEffect(() => {
+    const fn = (p: string | null): void => setModOpen(p === path);
+    openWatchers.add(fn);
+    return () => void openWatchers.delete(fn);
+  }, [path]);
   const linked = !!store.state.mods[path];
 
   // Some sliders genuinely do nothing in certain modes (Zoom Speed while Motion
@@ -150,7 +181,7 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
           title={linked ? 'Reacts to the music' : 'Make this react to the music'}
           onClick={(e) => {
             e.stopPropagation();
-            setModOpen(!modOpen);
+            setOpenPath(modOpen ? null : path);
           }}
         >
           ♪
@@ -158,7 +189,7 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
         <span class="ctl-value">{fmt(def, value)}</span>
       </div>
       {inactive && <div class="ctl-note">No effect here — {gate!.because}.</div>}
-      {modOpen && <ModPopover path={path} onClose={() => setModOpen(false)} />}
+      {modOpen && <ModPopover path={path} onClose={() => setOpenPath(null)} />}
       <div
         class="slider-track"
         ref={track}

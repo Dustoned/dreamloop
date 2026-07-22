@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { T } from '../i18n/en';
 import { requestPhoto } from '../capture/screenshot';
 import { party } from '../party/partyMode';
@@ -18,7 +18,16 @@ export function Panel() {
   const [collapsed, setCollapsed] = useState(false);
   const sheet = useSheet();
 
+  // Where each tab was scrolled to. Switching tabs remounts the body, so without
+  // this you were thrown back to the top of a long tab every time you came back.
+  const body = useRef<HTMLDivElement>(null);
+  const scrollPos = useRef<Record<string, number>>({});
+  useLayoutEffect(() => {
+    if (body.current) body.current.scrollTop = scrollPos.current[tab] ?? 0;
+  }, [tab]);
+
   const pickTab = (id: TabId) => {
+    if (body.current) scrollPos.current[tab] = body.current.scrollTop;
     setTab(id);
     saveTab(id);
     // At the peek snap the body is folded away, so switching tabs there changed
@@ -86,7 +95,7 @@ export function Panel() {
         ))}
       </nav>
 
-      <div class="panel-body">
+      <div class="panel-body" ref={body}>
         {tab === 'look' && <LookTab />}
         {tab === 'feel' && <FeelTab />}
         {tab === 'effects' && <EffectsTab />}

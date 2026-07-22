@@ -1,4 +1,5 @@
 uniform float u_ndrift;
+uniform float u_ndriftPhase;   // integral of u_ndrift: rate, not rescaled history
 uniform float u_ndensity;
 uniform float u_ndetail;
 uniform float u_nstars;
@@ -34,7 +35,7 @@ float gas(vec3 p, int oct, float thresh) {
 // Volumetric flight through fbm gas clouds, stars behind.
 void main() {
   vec2 sc = ctr(v_uv) * 1.6;
-  float t = u_time * u_ndrift * 0.35;
+  float t = u_ndriftPhase * 0.35;
   vec3 ro = vec3(0.0, 0.0, t);
   vec3 rd = normalize(vec3(sc, 1.0));
   rd.xy = rot2(sin(t * 0.18) * 0.25) * rd.xy;

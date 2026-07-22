@@ -122,6 +122,30 @@ export class Engine {
     }
   }
 
+  /**
+   * Running integral of every rate slider, keyed by param path. Advanced once per
+   * frame in render(); uploadParams only reads it, because a frame can bind the
+   * same program more than once.
+   */
+  private phases = new Map<string, number>();
+
+  private advancePhases(st: ParamState, dt: number): void {
+    const walk = (def: EffectDef | undefined, prefix: string): void => {
+      if (!def) return;
+      for (const pd of def.params) {
+        if (pd.type !== 'slider' || !pd.integrate) continue;
+        const path = prefix + pd.id;
+        const base = (st.params[path] ?? pd.default) as number;
+        const rate = this.modulated(st, path, base, pd.min, pd.max, def, pd.id);
+        this.phases.set(path, (this.phases.get(path) ?? 0) + dt * rate);
+      }
+    };
+    walk(effectById(st.scene), `scene.${st.scene}.`);
+    for (const e of st.effects) {
+      if (e.on) walk(effectById(e.id), `fx.${e.id}.`);
+    }
+  }
+
   private uploadParams(p: Program, def: EffectDef, st: ParamState, prefix: string): void {
     for (const pd of def.params) {
       const v = st.params[prefix + pd.id] ?? pd.default;
@@ -140,6 +164,9 @@ export class Engine {
             if (pd.step && pd.step >= 1) x = Math.max(pd.min, Math.round(x));
           }
           p.set1f(name, x);
+          // Rate sliders also get their integral, which is what the shader uses
+          // instead of u_time * u_<id>.
+          if (pd.integrate) p.set1f(`${name}Phase`, this.phases.get(prefix + pd.id) ?? 0);
           break;
         }
         case 'toggle':
@@ -230,6 +257,9 @@ export class Engine {
     const dt = Math.min((nowMs - this.lastNow) / 1000, 0.1);
     this.lastNow = nowMs;
     this.time += dt * num(st.params['global.speed'], 1);
+    // Rate sliders are integrated, so changing one bends the motion from here on
+    // instead of rescaling everything that already happened.
+    this.advancePhases(st, dt * num(st.params['global.speed'], 1));
     this.palShift += dt * num(st.params['global.colorspeed'], 0);
     this.palSpread = num(st.params['global.colorspread'], 1);
     this.autoAdjust = st.params['global.autoquality'] === true;

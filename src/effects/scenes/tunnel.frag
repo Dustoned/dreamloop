@@ -1,4 +1,5 @@
 uniform float u_flyspeed;
+uniform float u_flyspeedPhase;   // integral of u_flyspeed: rate, not rescaled history
 uniform float u_twist;
 uniform float u_repeat;
 uniform float u_fog;
@@ -10,7 +11,7 @@ void main() {
   float a = atan(p.y, p.x) / TAU; // -0.5..0.5
 
   float depth = 0.3 / r;
-  float z = depth + u_time * u_flyspeed;
+  float z = depth + u_flyspeedPhase;
   float ang = a * u_repeat + depth * u_twist;
 
   float v;

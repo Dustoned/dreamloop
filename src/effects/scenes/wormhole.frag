@@ -1,4 +1,5 @@
 uniform float u_wfly;
+uniform float u_wflyPhase;   // integral of u_wfly: rate, not rescaled history
 uniform float u_wradius;
 uniform float u_worganic;
 uniform float u_wglow;
@@ -32,7 +33,7 @@ float wall(vec3 p) {
 }
 
 void main() {
-  float t = u_time * u_wfly * 1.8;
+  float t = u_wflyPhase * 1.8;
   vec3 ro = vec3(path(t), t);
   vec3 target = vec3(path(t + 1.6), t + 1.6);
   vec3 fwd = normalize(target - ro);

@@ -275,6 +275,7 @@ body {
 /* ---------- Controls ---------- */
 
 .ctl {
+  position: relative;
   padding: 6px 0;
   outline: none;
 }
@@ -344,11 +345,19 @@ body {
 }
 
 .mod-popover {
-  background: rgba(0, 0, 0, 0.5);
+  /* Overlaid, not in the flow. In the flow it shoved the slider you had just
+     clicked — and every control below it — down the panel as it opened. */
+  position: absolute;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin-top: 2px;
+  background: rgba(10, 10, 18, 0.97);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
   padding: 8px;
-  margin-bottom: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55);
 }
 
 .mod-row {
@@ -497,6 +506,9 @@ input[type='color'] {
   display: flex;
   gap: 10px;
   overflow-x: auto;
+  /* Fade the trailing edge so it is obvious the row continues off-panel. */
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   padding-bottom: 6px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
@@ -1001,6 +1013,8 @@ body.panel-left .panel-pill {
   display: flex;
   gap: 6px;
   overflow-x: auto;
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
   padding: 8px 0 6px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.2) transparent;

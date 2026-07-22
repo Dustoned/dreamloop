@@ -1,5 +1,6 @@
 uniform float u_mvariant;
 uniform float u_mzoom;
+uniform float u_mzoomPhase;   // integral of u_mzoom: rate, not rescaled history
 uniform float u_mtwist;
 uniform float u_moffset;
 uniform float u_miters;
@@ -59,9 +60,12 @@ float de(vec3 p, mat2 rstep, out float trap, out float lvl) {
 }
 
 void main() {
-  // Endless seamless zoom: one full self-similar period per cycle.
-  float depth = fract(u_time * u_mzoom * 0.08);
-  float zoom = exp2(-depth * L3);
+  // This was a fract() wrap on log2(3), on the assumption that the sponge is
+  // exactly self-similar under a factor of three. Measured against the running
+  // image it is not: the wrap was the worst frame step in the entire cycle, 6.7x
+  // the median. A dive with an eased pull-back has no wrap to give away.
+  float depth = diveCycle(u_mzoomPhase * 0.03) * 3.0;
+  float zoom = exp2(-depth);
 
   vec2 sc = ctr(v_uv) * 1.7;
   sc = rot2(u_time * 0.05) * sc;

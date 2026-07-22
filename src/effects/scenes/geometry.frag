@@ -1,12 +1,13 @@
 uniform float u_gpattern;
 uniform float u_thick;
 uniform float u_grot;
+uniform float u_grotPhase;   // integral of u_grot: rate, not rescaled history
 uniform float u_gpulse;
 uniform float u_gdensity;
 
 void main() {
   vec2 p = ctr(v_uv) * 2.2;
-  p = rot2(u_time * u_grot * 0.3) * p;
+  p = rot2(u_grotPhase * 0.3) * p;
   vec2 q = p * u_gdensity;
 
   float d = 1e9;

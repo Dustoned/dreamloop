@@ -4,10 +4,12 @@ uniform float u_juliamix;
 uniform float u_dive;
 uniform float u_zmode;
 uniform float u_zspeed;
+uniform float u_zspeedPhase;   // integral of u_zspeed: rate, not rescaled history
 uniform float u_basezoom;
 uniform float u_iters;
 uniform float u_trapmix;
 uniform float u_spin;
+uniform float u_spinPhase;   // integral: rate, not rescaled history
 
 // Deep zoom into 2D escape-time fractals. Colour comes from the smooth iteration
 // count and a two-channel orbit trap; brightness comes from the exterior distance
@@ -55,7 +57,7 @@ void main() {
   // Cap the PEAK, not the span: the dive runs base..base+span, so capping only the
   // span let a high Start Depth push every cycle into the mush fade below.
   float span = clamp(CRISP - base, 0.0, 13.0);
-  float phase = u_time * u_zspeed * 0.25 / max(span, 0.001);
+  float phase = u_zspeedPhase * 0.25 / max(span, 0.001);
   float depth = base;
   if (u_zmode < 0.5) depth += span * diveCycle(phase);
   else if (u_zmode < 1.5) depth += span * (1.0 - diveCycle(phase));
@@ -63,12 +65,12 @@ void main() {
   // three times faster than Zoom In at the same Zoom Speed. Tying the frequency to
   // the span makes one slider mean one speed in every mode.
   else if (u_zmode < 2.5)
-    depth += (span * 0.5) * (1.0 - cos(u_time * u_zspeed * 0.25 * PI / max(span, 0.001)));
+    depth += (span * 0.5) * (1.0 - cos(u_zspeedPhase * 0.25 * PI / max(span, 0.001)));
   depth = clamp(depth, 0.0, ZLIMIT);
   float scale = exp2(-depth);
 
   // ---- plane ---------------------------------------------------------------
-  vec2 sp = rot2(u_spin * u_time * 0.06) * (ctr(v_uv) * VIEW);
+  vec2 sp = rot2(u_spinPhase * 0.06) * (ctr(v_uv) * VIEW);
   vec2 pix = diveCenter(u_dive) + sp * scale;
   float px = VIEW * scale / u_res.y; // world units per screen pixel
 

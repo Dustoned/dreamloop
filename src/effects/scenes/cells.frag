@@ -1,5 +1,6 @@
 uniform float u_cellsize;
 uniform float u_move;
+uniform float u_movePhase;   // integral of u_move: rate, not rescaled history
 uniform float u_edge;
 uniform float u_smoothk;
 uniform float u_cpulse;
@@ -17,7 +18,7 @@ void main() {
     for (int x = -1; x <= 1; x++) {
       vec2 g = vec2(float(x), float(y));
       vec2 o = hash22(i + g);
-      o = 0.5 + 0.42 * sin(u_time * u_move + o * TAU);
+      o = 0.5 + 0.42 * sin(u_movePhase + o * TAU);
       float d = length(g + o - f);
       if (d < f1) {
         f2 = f1;

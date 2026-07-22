@@ -1,12 +1,15 @@
 uniform float u_jpath;
 uniform float u_jmorph;
+uniform float u_jmorphPhase;   // integral: rate, not rescaled history
 uniform float u_jpower;
 uniform float u_zmode;
 uniform float u_zspeed;
+uniform float u_zspeedPhase;   // integral of u_zspeed: rate, not rescaled history
 uniform float u_basezoom;
 uniform float u_jiters;
 uniform float u_jglow;
 uniform float u_jspin;
+uniform float u_jspinPhase;   // integral: rate, not rescaled history
 
 // Continuously shape-shifting Julia set. The constant c never stops travelling a
 // path that hugs the boundary of the parameter set, so the filigree keeps folding
@@ -93,22 +96,22 @@ void main() {
   float span = clamp(CRISP - base, 0.0, 12.0);   // stay below the fp32 mush zone
   // Looping dive, so Zoom In / Zoom Out keep moving instead of clamping to a
   // standstill after the first minute.
-  float phase = u_time * u_zspeed * 0.25 / max(span, 0.001);
+  float phase = u_zspeedPhase * 0.25 / max(span, 0.001);
   float depth = base;
   if (u_zmode < 0.5) depth += span * diveCycle(phase);
   else if (u_zmode < 1.5) depth += span * (1.0 - diveCycle(phase));
   // Frequency scaled by the span, so Zoom Speed means the same rate in every mode.
   else if (u_zmode < 2.5)
-    depth += (span * 0.5) * (1.0 - cos(u_time * u_zspeed * 0.25 * PI / max(span, 0.001)));
+    depth += (span * 0.5) * (1.0 - cos(u_zspeedPhase * 0.25 * PI / max(span, 0.001)));
   depth = clamp(depth, -2.0, ZLIMIT);
   float scale = exp2(-depth);
 
   // ---- the morphing constant ------------------------------------------------
-  // A magnified view needs a far slower morph or the structure tears across the
-  // screen faster than the eye can follow: shape holds still while we dive, and
-  // keeps travelling whenever we are wide.
-  float morph = u_jmorph * 0.25 * exp2(-max(depth, 0.0) * 0.85);
-  vec2 c = juliaPath(1.9 + u_time * morph);
+  // Morph Speed is integrated, so a beat (or a slider drag) bends the shape's
+  // travel from here on instead of teleporting it. The old form multiplied the
+  // unbounded clock by a rate that itself depended on the dive depth, which is
+  // exactly the construction that made one kick drum jump a whole lap of the path.
+  vec2 c = juliaPath(1.9 + u_jmorphPhase * 0.25);
   // Higher powers push their interesting parameter band slightly outward.
   float zr = pow(1.0 / pw, 1.0 / (pw - 1.0));
   c *= (zr * (1.0 + 1.0 / pw)) / 0.75;
@@ -127,12 +130,12 @@ void main() {
   vec2 center = mix(vec2(0.0), beta, smoothstep(0.3, 3.0, depth));
 
   // ---- plane ----------------------------------------------------------------
-  vec2 sp = rot2(u_jspin * u_time * 0.06 + 0.06 * sin(u_time * 0.05)) * (ctr(v_uv) * VIEW);
+  vec2 sp = rot2(u_jspinPhase * 0.06 + 0.06 * sin(u_time * 0.05)) * (ctr(v_uv) * VIEW);
   vec2 z = center + sp * scale;
   float px = VIEW * scale / u_res.y; // world units per screen pixel
 
   // Line trap through the origin, turning slowly: filaments sweep as it rotates.
-  float lang = u_time * (0.11 + 0.4 * u_jspin);
+  float lang = u_time * 0.11 + u_jspinPhase * 0.4;
   vec2 lnrm = vec2(-sin(lang), cos(lang));
 
   // ---- iterate --------------------------------------------------------------

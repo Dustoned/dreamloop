@@ -3,9 +3,11 @@ uniform float u_shapex;
 uniform float u_shapey;
 uniform float u_kzoom;
 uniform float u_journey;
+uniform float u_journeyPhase;   // integral of u_journey: rate, not rescaled history
 uniform float u_kmode;
 uniform float u_kformula;
 uniform float u_kspin;
+uniform float u_kspinPhase;   // integral of u_kspin: rate, not rescaled history
 uniform float u_kglow;
 
 // Kali-style IFS. The fold variant (u_kformula) changes the creature completely;
@@ -16,15 +18,15 @@ void main() {
   // is self-similar at 2x — it is not, so every lap ended in a visible jump.
   #define KSPAN 2.5
   float depth = 0.0;
-  if (u_kmode < 0.5) depth = diveCycle(u_time * u_journey * 0.024);
-  else if (u_kmode < 1.5) depth = 1.0 - diveCycle(u_time * u_journey * 0.024);
+  if (u_kmode < 0.5) depth = diveCycle(u_journeyPhase * 0.024);
+  else if (u_kmode < 1.5) depth = 1.0 - diveCycle(u_journeyPhase * 0.024);
   // Frequency tied to the dive rate: widening KSPAN without touching this left
   // Ping-Pong travelling three times faster than Zoom In on the same slider.
-  else if (u_kmode < 2.5) depth = 0.5 - 0.5 * cos(u_time * u_journey * 0.024 * PI);
+  else if (u_kmode < 2.5) depth = 0.5 - 0.5 * cos(u_journeyPhase * 0.024 * PI);
   float scale = exp2(-depth * KSPAN);
 
   vec2 p = ctr(v_uv) * 2.0 / u_kzoom * scale;
-  p = rot2(u_time * u_kspin * 0.15) * p;
+  p = rot2(u_kspinPhase * 0.15) * p;
 
   // Hold parks the zoom; the shape keeps drifting slowly so it never freezes into
   // a still image.

@@ -1,10 +1,12 @@
 uniform float u_ffly;
+uniform float u_fflyPhase;   // integral of u_ffly: rate, not rescaled history
 uniform float u_ffold;
 uniform float u_fwarp;
 uniform float u_fglow;
 uniform float u_fiter2;
 uniform float u_fmode;
 uniform float u_fspin;
+uniform float u_fspinPhase;   // integral of u_fspin: rate, not rescaled history
 uniform float u_fwander;
 
 // Raymarched kaleidoscopic IFS in endlessly repeating space.
@@ -31,7 +33,7 @@ float de(vec3 p, mat2 rm, out float trap) {
 }
 
 void main() {
-  float t = u_time * u_ffly;
+  float t = u_fflyPhase;
   float rotA = u_fwarp * (0.35 + 0.25 * sin(u_time * 0.13));
 
   // Motion: Fly Through moves the camera; Zoom modes stay put and scale space,
@@ -62,7 +64,7 @@ void main() {
   float zoom = 1.0;
 
   vec2 sc = ctr(v_uv) * 1.8;
-  sc = rot2(sin(t * 0.2) * 0.4 + u_time * u_fspin * 0.2) * sc;
+  sc = rot2(sin(t * 0.2) * 0.4 + u_fspinPhase * 0.2) * sc;
   vec3 rd = normalize(vec3(sc, 1.0));
 
   float dist = 0.0;

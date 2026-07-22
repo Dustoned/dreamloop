@@ -2,6 +2,7 @@ uniform float u_bpower;
 uniform float u_bmorph;
 uniform float u_bcam;
 uniform float u_bspeed;
+uniform float u_bspeedPhase;   // integral of u_bspeed: rate, not rescaled history
 uniform float u_bdist;
 uniform float u_biters;
 uniform float u_bglow;
@@ -59,9 +60,9 @@ void main() {
     // Looping approach. The old exponential ease crept toward nearD and then sat
     // there for good, so after half a minute "Zoom In" was indistinguishable
     // from Hold.
-    camDist = mix(farD, nearD, diveCycle(u_time * u_bspeed * 0.035));   // Zoom In
+    camDist = mix(farD, nearD, diveCycle(u_bspeedPhase * 0.035));   // Zoom In
   } else if (u_bcam < 2.5) {
-    camDist = mix(farD, nearD, 0.5 - 0.5 * cos(u_time * u_bspeed * 0.035 * PI)); // Ping-Pong
+    camDist = mix(farD, nearD, 0.5 - 0.5 * cos(u_bspeedPhase * 0.035 * PI)); // Ping-Pong
   }                                                                     // else Hold
   camDist = max(camDist, nearD);
 

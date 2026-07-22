@@ -26,6 +26,19 @@ export interface SliderParam extends ParamBase {
    */
   perfScale?: boolean;
   /**
+   * This slider is a RATE, not a position: the engine integrates it (phase += dt *
+   * value) and gives the shader `u_<id>Phase` to use where it would otherwise have
+   * written `u_time * u_<id>`.
+   *
+   * That multiplication is a trap. u_time grows without bound, so changing the
+   * slider rescales every second that has already elapsed and the animation
+   * teleports — by an amount that grows the longer the session runs. It is far
+   * worse when the slider is linked to the music, because a beat spikes it for a
+   * single frame: after a few minutes one kick drum can replay an entire dive.
+   */
+  integrate?: boolean;
+
+  /**
    * This control only does anything while a sibling select has some other value —
    * Zoom Speed does nothing while Motion is on Hold, for instance. The UI dims it
    * and says why, instead of leaving you with a slider that appears broken.

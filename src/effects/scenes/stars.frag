@@ -1,5 +1,6 @@
 uniform float u_density;
 uniform float u_fly;
+uniform float u_flyPhase;   // integral of u_fly: rate, not rescaled history
 uniform float u_twinkle;
 uniform float u_layers;
 uniform float u_starsize;
@@ -13,7 +14,7 @@ void main() {
   for (int i = 0; i < 8; i++) {
     if (i >= L) break;
     float fi = float(i);
-    float z = fract(u_time * u_fly * 0.06 + fi / float(L)); // 0 far -> 1 near
+    float z = fract(u_flyPhase * 0.06 + fi / float(L)); // 0 far -> 1 near
     float scale = mix(20.0, 2.5, z);
     vec2 q = p * scale + vec2(fi * 17.13, fi * 9.7);
     vec2 cell = floor(q);
