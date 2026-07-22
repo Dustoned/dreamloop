@@ -26,12 +26,16 @@ npm run build    # productie-build in dist/
 - **Simple-modus**: scene-kiezer, preset-rij, **5 macro-sliders** (Speed / Intensity / Complexity / Zoom / Warp), één-tik effect-chips, kleurthema's + shuffle, audiobron en een grote **Surprise Me**-knop.
 - **Advanced-modus**: elke parameter van elke scene en elk effect, plus eigen kleurenpaletten (2–4 kleuren, OKLab-interpolatie).
 - **Globale beeldregeling** die op élke scene werkt: Colour Speed, Colour Spread, Brightness, Contrast, Saturation.
-- **Elke slider kan op de muziek reageren**: klik op het ♪-knopje naast een slider, kies Bass/Mid/Treble/Beat en hoeveel. De koppeling gaat mee in presets en deel-codes.
-- **Audio-reactief**: sleep een muziekbestand op de pagina, deel tab-audio (Spotify/YouTube) of gebruik de microfoon. Bass → puls, beat → flits, treble → sparkle.
-- **Party Mode** 🎉: fullscreen, UI verdwijnt, en de visuals wisselen vanzelf — op de beat als er muziek speelt.
+- **Party Mode** 🎉: fullscreen, UI weg, en de visuals wisselen zichzelf — op de beat als er muziek speelt.
 - **Delen**: kopieer een link of compacte code; wie hem opent krijgt exact jouw visual.
-- **Presets**: 10 ingebouwde looks + je eigen creaties opslaan (localStorage). Je laatste sessie wordt automatisch onthouden.
-- **Foto**: sla het huidige beeld op als PNG.
+
+## Muziek
+
+Sleep een muziekbestand op de pagina, deel tab-audio (Spotify/YouTube) of gebruik de microfoon.
+
+**Elk van de 26 scenes en effecten heeft zijn eigen muzikale reactie**, gekozen bij zijn karakter — bas laat de gloed zwellen, de beat geeft de zoom een zet, hoge tonen laten de korrel schitteren. Je hoeft niets in te stellen; regel alleen de **Audio Reactivity**-slider.
+
+Wil je het zelf bepalen: klik het **♪-knopje** naast élke slider, kies Bass/Mid/Treble/Beat en hoeveel. Zo'n koppeling overschrijft de ingebouwde reactie en gaat mee in presets en deel-codes.
 
 ## Sneltoetsen
 
@@ -42,16 +46,23 @@ npm run build    # productie-build in dist/
 | `F` | Fullscreen (of dubbelklik op het beeld) |
 | `S` | Foto opslaan |
 | `P` | Party Mode aan/uit |
-| `H` | Paneel verbergen/tonen |
+| `H` | Bediening verbergen/tonen |
 | Dubbelklik op slider | Reset naar standaardwaarde |
+
+Onder **Display** stel je in of de bediening vanzelf wegvalt (en na hoeveel seconden), en aan welke kant van het scherm hij staat.
+
+## Als het stroef loopt
+
+De app meet zichzelf en schaalt automatisch terug op een zwak apparaat. In het **Performance**-blokje zie je je huidige fps en kun je zelf Low / Medium / High kiezen.
+
+Technisch gebeurt er onder water nogal wat om haperingen te voorkomen: shaders worden op de achtergrond gebouwd en vooraf klaargezet (nooit midden in het tekenen), de kwaliteit zakt al na één slecht beeld, zware scenes leveren ook rekenwerk in en niet alleen resolutie, en het matglas-effect van het paneel gaat uit op touchapparaten.
 
 ## Techniek (kort)
 
 - **Vite + TypeScript + Preact** — het bedieningspaneel is Preact; de 60fps-renderloop raakt het framework nooit aan.
 - **Rauwe WebGL2**, fullscreen-triangle fragment shaders. Frame graph: scene → temporele feedback (trails) → post-effect-keten (ping-pong) → final blit met vignette/grain/dither.
-- **Parametersysteem**: elke scene/elk effect declareert zijn parameters één keer in TypeScript ([src/effects/index.ts](src/effects/index.ts)); UI, shader-uniforms en preset-serialisatie worden daar automatisch uit gegenereerd.
+- **Parametersysteem**: elke scene/elk effect declareert zijn parameters én zijn muzikale reactie één keer in TypeScript ([src/effects/index.ts](src/effects/index.ts)); UI, shader-uniforms en preset-serialisatie worden daaruit gegenereerd.
 - **Kleuren**: 256×1 gradient-LUT, stops geïnterpoleerd in OKLab.
 - **Delen**: state − defaults → JSON → deflate → base64url in `#p=…`.
-- **Performance**: interne-resolutieschaal (Quality-slider) + automatische degradatie op basis van mediane frametijd.
 
 Later inpakken als Windows-app (systeemaudio, Spout/NDI) kan met Tauri of Electron zonder iets te herschrijven.
