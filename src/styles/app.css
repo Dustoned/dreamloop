@@ -1636,3 +1636,44 @@ body.no-webgl {
     font-size: 16px;
   }
 }
+
+/* Small reset button that sits in a section heading. */
+.sec-action {
+  margin-left: auto;
+  border: 1px solid var(--panel-border);
+  background: var(--card-bg);
+  color: var(--text-dim);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 0.85em;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+}
+
+.sec-action:hover {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+/* A section that already has a hint puts the reset after it, not on top of it. */
+.sec-hint + .sec-action {
+  margin-left: 8px;
+}
+
+.wide-btn.subtle {
+  background: var(--card-bg);
+  color: var(--text-dim);
+  margin-top: 8px;
+}
+
+.wide-btn.subtle:hover {
+  color: var(--text);
+}
+
+@media (pointer: coarse) {
+  .sec-action {
+    min-height: 32px;
+    padding: 5px 12px;
+  }
+}

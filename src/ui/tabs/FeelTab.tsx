@@ -5,6 +5,7 @@ import { Section } from '../Section';
 import { MacroSlider } from '../MacroSlider';
 import { AutoControl } from '../controls/AutoControl';
 import { useStructure } from '../hooks/useParam';
+import { resetEffect, resetGlobals } from '../../state/reset';
 
 const IMAGE_PARAMS = ['brightness', 'contrast', 'saturation', 'colorspeed', 'colorspread'];
 
@@ -23,14 +24,27 @@ export function FeelTab() {
       </Section>
 
       {sceneDef && (
-        <Section title={`${sceneDef.name} settings`}>
+        <Section
+          title={`${sceneDef.name} settings`}
+          action={{
+            label: 'Reset',
+            title: `Put every ${sceneDef.name} control back to its default`,
+            fn: () => resetEffect(sceneDef.id),
+          }}
+        >
           {sceneDef.params.map((p) => (
             <AutoControl key={p.id} path={`scene.${sceneDef.id}.${p.id}`} def={p} />
           ))}
         </Section>
       )}
 
-      <Section title="Image" collapsible defaultOpen={false} hint="brightness, colour">
+      <Section
+        title="Image"
+        collapsible
+        defaultOpen={false}
+        hint="brightness, colour"
+        action={{ label: 'Reset', title: 'Put the image sliders back', fn: resetGlobals }}
+      >
         {GLOBAL_PARAMS.filter((p) => IMAGE_PARAMS.includes(p.id)).map((p) => (
           <AutoControl key={p.id} path={`global.${p.id}`} def={p} />
         ))}

@@ -5,6 +5,7 @@ import { Section } from '../Section';
 import { QuickEffects } from '../QuickEffects';
 import { AutoControl } from '../controls/AutoControl';
 import { useStructure } from '../hooks/useParam';
+import { resetEffect } from '../../state/reset';
 
 function EffectCard({ id }: { id: string }) {
   const def = effectById(id);
@@ -39,6 +40,9 @@ function EffectCard({ id }: { id: string }) {
           {def.params.map((p) => (
             <AutoControl key={p.id} path={`fx.${id}.${p.id}`} def={p} />
           ))}
+          <button class="wide-btn subtle" onClick={() => resetEffect(id)}>
+            Reset {def.name}
+          </button>
         </div>
       )}
     </div>

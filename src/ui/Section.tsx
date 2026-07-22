@@ -14,12 +14,15 @@ export function Section({
   collapsible = false,
   defaultOpen = true,
   hint,
+  action,
 }: {
   title: string;
   children: ComponentChildren;
   collapsible?: boolean;
   defaultOpen?: boolean;
   hint?: string;
+  /** Small button in the header — used for "Reset". */
+  action?: { label: string; fn: () => void; title?: string };
 }) {
   // Remembered per title, because switching tabs unmounts the whole body and a
   // plain useState would collapse everything you had opened.
@@ -35,6 +38,18 @@ export function Section({
         <h3>
           {title}
           {hint && <span class="sec-hint">{hint}</span>}
+          {action && (
+            <button
+              class="sec-action"
+              title={action.title}
+              onClick={(e) => {
+                e.stopPropagation();
+                action.fn();
+              }}
+            >
+              {action.label}
+            </button>
+          )}
         </h3>
         {children}
       </section>

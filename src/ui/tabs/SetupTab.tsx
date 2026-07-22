@@ -3,6 +3,7 @@ import { party } from '../../party/partyMode';
 import { Section } from '../Section';
 import { PerformancePanel } from '../PerformancePanel';
 import { DisplaySettings } from '../DisplaySettings';
+import { resetEverything } from '../../state/reset';
 
 const INTERVALS = [
   { sec: 30, label: '30s' },
@@ -51,6 +52,16 @@ export function SetupTab() {
       <Section title="Party Mode" collapsible defaultOpen={false} hint="auto-shuffle">
         <PartySettings />
       </Section>
+      <Section title="Start over" hint="everything back to how it shipped">
+        <p class="tab-note">
+          Puts every scene, every effect, the palette and the image sliders back to
+          their defaults. You can undo it from the message that appears.
+        </p>
+        <button class="wide-btn" onClick={resetEverything}>
+          ↺ Reset everything
+        </button>
+      </Section>
+
     </>
   );
 }
