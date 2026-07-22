@@ -336,9 +336,10 @@ export const EFFECTS: EffectDef[] = [
       { type: 'slider', id: 'shapex', label: 'Shape X', min: 0.2, max: 1.2, step: 0.005, default: 0.6, surprise: [0.35, 1.05] },
       { type: 'slider', id: 'shapey', label: 'Shape Y', min: 0.2, max: 1.2, step: 0.005, default: 0.55, surprise: [0.35, 1.05] },
       { type: 'slider', id: 'kzoom', label: 'Zoom', min: 0.4, max: 3, step: 0.01, default: 1, curve: 'exp', surprise: [0.6, 2] },
-      { type: 'slider', id: 'journey', label: 'Zoom Speed', min: 0, max: 1, step: 0.01, default: 0.35, surprise: [0.1, 0.8], activeWhen: { param: 'kmode', notEquals: 3, because: 'set Motion away from Hold' } },
+      { type: 'slider', id: 'journey', label: 'Zoom Speed', min: 0, max: 1, step: 0.01, default: 0.35, surprise: [0.1, 0.8], integrate: true, activeWhen: { param: 'kmode', notEquals: 3, because: 'set Motion away from Hold' } },
       { type: 'slider', id: 'kspin', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0, surprise: [-0.6, 0.6], integrate: true },
       { type: 'slider', id: 'kglow', label: 'Glow', min: 0, max: 1, step: 0.01, default: 0.4, surprise: [0.1, 0.9] },
+      { type: 'slider', id: 'kdrift', label: 'Shape Drift', min: 0, max: 1.5, step: 0.01, default: 0.5, surprise: [0.2, 1.1] },
     ],
   },
   {
@@ -449,7 +450,7 @@ export const EFFECTS: EffectDef[] = [
         default: 2,
         surprise: true,
       },
-      { type: 'slider', id: 'zspeed', label: 'Zoom Speed', min: 0, max: 2, step: 0.01, default: 0.7, surprise: [0.3, 1.4], activeWhen: { param: 'zmode', notEquals: 3, because: 'set Motion away from Hold' } },
+      { type: 'slider', id: 'zspeed', label: 'Zoom Speed', min: 0, max: 2, step: 0.01, default: 0.7, surprise: [0.3, 1.4], integrate: true, activeWhen: { param: 'zmode', notEquals: 3, because: 'set Motion away from Hold' } },
       { type: 'slider', id: 'basezoom', label: 'Start Depth', min: 0, max: 12, step: 0.05, default: 0, surprise: [0, 6] },
       { type: 'slider', id: 'power', label: 'Power', min: 2, max: 8, step: 0.01, default: 2, surprise: [2, 5] },
       { type: 'slider', id: 'juliamix', label: 'Julia Blend', min: 0, max: 1, step: 0.01, default: 0, surprise: [0, 1] },
@@ -495,7 +496,7 @@ export const EFFECTS: EffectDef[] = [
       },
       { type: 'slider', id: 'jmorph', label: 'Morph Speed', min: 0, max: 2, step: 0.01, default: 0.5, surprise: [0.15, 1.2], integrate: true },
       { type: 'slider', id: 'jpower', label: 'Power', min: 2, max: 8, step: 0.01, default: 2, surprise: [2, 5] },
-      { type: 'slider', id: 'zspeed', label: 'Zoom Speed', min: 0, max: 2, step: 0.01, default: 0.5, activeWhen: { param: 'zmode', notEquals: 3, because: 'set Motion away from Hold' } },
+      { type: 'slider', id: 'zspeed', label: 'Zoom Speed', min: 0, max: 2, step: 0.01, default: 0.5, integrate: true, activeWhen: { param: 'zmode', notEquals: 3, because: 'set Motion away from Hold' } },
       { type: 'slider', id: 'basezoom', label: 'Zoom', min: -2, max: 8, step: 0.05, default: 1.4, surprise: [0.8, 3] },
       { type: 'slider', id: 'jiters', label: 'Detail', min: 32, max: 300, step: 1, default: 140, surprise: [80, 240], perfScale: true },
       { type: 'slider', id: 'jglow', label: 'Filament Glow', min: 0, max: 1, step: 0.01, default: 0.6, surprise: [0.3, 1] },
@@ -753,6 +754,7 @@ export const EFFECTS: EffectDef[] = [
         step: 0.01,
         default: 0.5,
         surprise: [0.2, 1.2],
+        integrate: true,
       },
       { type: 'slider', id: 'sat', label: 'Saturation', min: 0, max: 2, step: 0.01, default: 1 },
     ],
@@ -811,6 +813,23 @@ for (const e of EFFECTS) {
     }
     seen.add(p.id);
   }
+  // If a shader reads u_<id>Phase, the registry must declare that slider as a rate.
+  // Miss it and the uniform is simply never uploaded: it stays 0, the motion it
+  // drives freezes solid, and nothing anywhere complains. That is exactly what
+  // happened to Fractal Voyage, Deep Zoom, Julia Morph and Rainbow Cycle — every
+  // Motion setting sat still because a regex had skipped over three declarations.
+  for (const m of e.frag.matchAll(/u_([a-z0-9]+)Phase/g)) {
+    const id = m[1];
+    const pd = e.params.find((x) => x.id === id);
+    if (!pd || pd.type !== 'slider' || !pd.integrate) {
+      throw new Error(
+        `[dreamloop] effect "${e.id}" reads u_${id}Phase, but "${id}" is not a slider ` +
+          `declared with integrate: true — the uniform would never be uploaded and the ` +
+          `motion it drives would silently freeze.`,
+      );
+    }
+  }
+
   // A built-in reaction's amount is a fraction of the slider's whole range, so a
   // wide-range param at 0.5 lurches halfway across on every beat. A third of the
   // range is already emphatic; past that the music stops being an accent and
