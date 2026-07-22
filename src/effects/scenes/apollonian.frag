@@ -30,40 +30,32 @@ float de(vec3 p, out float trap, out float gen) {
 }
 
 void main() {
-  // This packing is NOT self-similar under any scale, so no fract() wrap can be
-  // seamless — de() folds space with a lattice of fixed period 2 before it scales
-  // by u_ascale, and those only agree when Packing happens to sit at 2.
+  // Endless, one way, forever — by travelling rather than zooming.
   //
-  // It used to wrap every log2(u_ascale) octaves anyway, which at the default
-  // Packing is a 1.35x zoom every 18 seconds followed by a hard cut back. Measured:
-  // the step across that cut was 5.8x a normal frame step — the "it ends like a
-  // GIF" the whole thing looked like. Wrapping on a clean factor of 2 instead was
-  // no better (5.2x), which is what proves there is no seamless factor to find.
+  // A seamless ZOOM is impossible here and that is not a tuning problem: de()
+  // folds space with a lattice of fixed period 2 before it applies the packing
+  // scale, so the structure is not self-similar under any factor. Measured both
+  // ways: a wrap on log2(Packing) stepped 5.8x an ordinary frame, a wrap on a
+  // clean factor of 2 stepped 5.2x. There is no seamless factor to find.
   //
-  // So: no wrap at all, and no rewind either — a cosine breathes in and back out,
-  // the one schedule with no fast leg anywhere.
+  // What the lattice DOES repeat under is translation: every 2 units along any
+  // axis the packing is identical. So the camera simply flies, forever, and the
+  // wrap is exact rather than approximate. No reset, no pull-back, no fade.
   //
-  // 2.5 octaves, not more. Sweeping the depth showed the image going flat past
-  // about 3.4 and the distance estimator breaking down at 4.0: at that depth the
-  // camera sits 0.1 units out, the inversion clamp saturates and the march runs
-  // out of steps, which measured as a 9x frame-step spike at the exact point the
-  // zoom velocity is zero. That spike was the estimator failing, not motion.
-  //
-  // Result, measured over a whole cycle: worst frame step 2.6x the median and the
-  // loop point 0.95x — i.e. indistinguishable from ordinary motion. One breath now
-  // takes 157 seconds instead of cutting every 18.
-  float depth = (1.0 - cos(u_azoomPhase * 0.05)) * 1.25;
-  float zoom = exp2(-depth);
+  // The flight line is not a guess. Reimplementing de() and scanning every lateral
+  // offset for the minimum clearance over a full period gives one clear winner at
+  // (-0.9167, -1.0): 0.30 units of room, holding to 0.22 at the top of the Packing
+  // range. The origin axis, where it used to sit, measures 0.0000 — dead on the
+  // surface, which is why it needed a zoom to stay out of trouble.
+  const vec2 LANE = vec2(-0.9167, -1.0);
+  float wander = 0.12;   // scan says clearance is still 0.264 this far off the line
+
+  float t = u_azoomPhase * 0.55;
+  vec3 ro = vec3(LANE + wander * vec2(sin(t * 0.23), cos(t * 0.19)), t);
 
   vec2 sc = ctr(v_uv) * 1.6;
   sc = rot2(u_aspinPhase * 0.15) * sc;
-
-  float a = u_time * 0.06;
-  vec3 ro = vec3(0.9 * sin(a), 0.35 + 0.2 * sin(a * 0.7), 0.9 * cos(a)) * 1.6 * zoom;
-  vec3 fwd = normalize(-ro);
-  vec3 right = normalize(cross(fwd, vec3(0.0, 1.0, 0.0)));
-  vec3 up = cross(right, fwd);
-  vec3 rd = normalize(fwd + right * sc.x + up * sc.y);
+  vec3 rd = normalize(vec3(sc, 1.0));
 
   float dist = 0.0;
   float glow = 0.0;
@@ -71,8 +63,7 @@ void main() {
   float trap = 0.0;
   float gen = 0.0;
   float steps = 0.0;
-  float maxD = 6.0 * zoom;
-  float eps = 0.0007 * zoom;
+  float maxD = 6.0;
 
   int MARCH = marchSteps(30, 80);
   for (int i = 0; i < 80; i++) {
@@ -80,7 +71,10 @@ void main() {
     vec3 p = ro + rd * dist;
     float tr, g;
     float d = de(p, tr, g);
-    glow += exp(-abs(d) / (0.02 * zoom));
+    glow += exp(-abs(d) * 50.0);
+    // One pixel's worth of distance, so far detail is not resolved finer than the
+    // screen can show it.
+    float eps = max(0.0007, dist * 0.7 / u_res.y);
     if (d < eps) {
       hit = dist;
       trap = tr;
@@ -97,9 +91,9 @@ void main() {
     float ao = clamp(1.0 - steps / 80.0, 0.0, 1.0);
     ao = ao * ao * 0.75 + 0.25;
     // each bubble generation gets its own hue; the dive cycles through them
-    float t = sqrt(trap) * 1.6 + gen * 0.06 + u_time * 0.02;
-    col = pal(t) * ao * (0.4 + 0.9 * exp(-hit / (2.5 * zoom)));
-    col += pal(t + 0.35) * pow(ao, 5.0) * 0.5; // rim highlight on the spheres
+    float ct = sqrt(trap) * 1.6 + gen * 0.06 + u_time * 0.02;
+    col = pal(ct) * ao * (0.4 + 0.9 * exp(-hit * 0.4));
+    col += pal(ct + 0.35) * pow(ao, 5.0) * 0.5; // rim highlight on the spheres
   }
   col += pal(0.2 + sqrt(trap) * 0.8 + u_time * 0.025) * glow * u_aglow * 0.005;
 

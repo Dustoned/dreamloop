@@ -569,7 +569,7 @@ export const EFFECTS: EffectDef[] = [
     cost: 3,
     audioReact: [{ id: 'aglow', band: 'bass', amount: 0.3 }, { id: 'aspin', band: 'beat', amount: 0.18 }],
     params: [
-      { type: 'slider', id: 'ascale', label: 'Packing', min: 1.1, max: 2.2, step: 0.005, default: 1.35, surprise: [1.2, 1.9] },
+      { type: 'slider', id: 'ascale', label: 'Packing', min: 1.1, max: 1.9, step: 0.005, default: 1.35, surprise: [1.2, 1.85] },
       { type: 'slider', id: 'azoom', label: 'Endless Zoom', min: 0, max: 2, step: 0.01, default: 0.8, surprise: [0.3, 1.5], integrate: true },
       { type: 'slider', id: 'athick', label: 'Bubble Size', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.9] },
       { type: 'slider', id: 'aiters', label: 'Detail', min: 4, max: 12, step: 1, default: 8, surprise: [5, 11], perfScale: true },
