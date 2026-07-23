@@ -10,6 +10,8 @@ uniform float u_iters;
 uniform float u_trapmix;
 uniform float u_spin;
 uniform float u_spinPhase;   // integral: rate, not rescaled history
+uniform float u_stripes;     // stripe average colouring: detail in the smooth exterior
+uniform float u_relief;      // fake-3D relief lit by the complex derivative
 
 // Deep zoom into 2D escape-time fractals. Colour comes from the smooth iteration
 // count and a two-channel orbit trap; brightness comes from the exterior distance
@@ -128,6 +130,12 @@ void main() {
   float acc = 0.0;     // energy: how long the orbit lingers near the origin
   float m = 0.0;
   float esc = -1.0;
+  // Stripe Average Colouring (Jussi Härkönen): average sin(k*arg(z)) along the orbit.
+  // It paints flame-like ripples across the wide smooth bands that plain escape-count
+  // colouring leaves flat. stLast/stCount keep the last term so we can blend the final
+  // partial average by the smooth-escape fraction and avoid banding at iteration steps.
+  float stSum = 0.0, stCount = 0.0, stLast = 0.0;
+  bool doStripe = u_stripes > 0.001;
 
   for (int i = 0; i < 400; i++) {
     if (i >= n) break;
@@ -152,6 +160,12 @@ void main() {
     vec2 zn = zp + c - 0.5 * fPhoenix * zPrev; // Phoenix: + p * zPrev, p = -0.5
     zPrev = z;
     z = zn;
+
+    if (doStripe && i >= 1) {
+      stLast = 0.5 + 0.5 * sin(6.0 * atan(z.y, z.x));
+      stSum += stLast;
+      stCount += 1.0;
+    }
 
     m = dot(z, z);
     trapR = min(trapR, m);
@@ -191,6 +205,26 @@ void main() {
   float drift = u_time * 0.02 + dither;
   float t = mix(tIter, tTrap, clamp(u_trapmix, 0.0, 1.0)) + drift;
 
+  // Stripe average, blended by the smooth-escape fraction so it never bands, then
+  // fed into the exterior palette coordinate as extra ripple detail.
+  float ts = t;
+  if (escaped && doStripe && stCount > 1.5) {
+    float avg1 = stSum / stCount;
+    float avg2 = (stSum - stLast) / (stCount - 1.0);
+    float stripeVal = mix(avg2, avg1, fract(sn));
+    ts = t + u_stripes * (stripeVal - 0.5) * 0.9;
+  }
+
+  // Relief: light the boundary by the complex-derivative "normal" u = z / z'. Slopes
+  // facing the (slowly turning) light brighten, the rest fall into shadow -> embossed 3D.
+  float relief = 1.0;
+  if (escaped && u_relief > 0.001) {
+    vec2 un = normalize(cdiv(z, dz));
+    float lang = 2.3 + u_time * 0.05;
+    float refl = clamp((dot(un, vec2(cos(lang), sin(lang))) + 1.5) / 2.5, 0.0, 1.0);
+    relief = mix(1.0, 0.30 + 1.45 * refl, u_relief);
+  }
+
   float halo = exp(-deN * 0.035); // wide falloff into black
   float fil = exp(-deN * 0.45);   // one-pixel filament riding the boundary
   float glow = 1.0 - exp(-acc * 0.05);
@@ -198,8 +232,9 @@ void main() {
 
   vec3 col;
   if (escaped) {
-    col = pal(t) * (0.035 + 0.85 * halo);
-    col += pal(t + 0.22) * fil * 1.2 * aud;
+    col = pal(ts) * (0.035 + 0.85 * halo);
+    col += pal(ts + 0.22) * fil * 1.2 * aud;
+    col *= relief;
   } else {
     // interior: near black, but the trap keeps the inner filigree readable
     float structure = exp(-tr * 2.4) + 0.55 * exp(-tl * 7.0);

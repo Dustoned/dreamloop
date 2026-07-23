@@ -10,6 +10,8 @@ uniform float u_jiters;
 uniform float u_jglow;
 uniform float u_jspin;
 uniform float u_jspinPhase;   // integral: rate, not rescaled history
+uniform float u_stripes;      // stripe average colouring: detail in the smooth exterior
+uniform float u_relief;       // fake-3D relief lit by the complex derivative
 
 // Continuously shape-shifting Julia set. The constant c never stops travelling a
 // path that hugs the boundary of the parameter set, so the filigree keeps folding
@@ -147,6 +149,10 @@ void main() {
   float acc = 0.0;          // energy: how long the orbit lingers near the origin
   float m = 0.0;
   float esc = -1.0;
+  // Stripe Average Colouring: mean of sin(k*arg(z)) along the orbit, blended below by
+  // the smooth-escape fraction so it paints band-free ripples across the smooth field.
+  float stSum = 0.0, stCount = 0.0, stLast = 0.0;
+  bool doStripe = u_stripes > 0.001;
 
   for (int i = 0; i < 300; i++) {
     if (i >= n) break;
@@ -162,6 +168,12 @@ void main() {
     }
     dz = pw * cmul(zm1, dz);
     z = zp + c;
+
+    if (doStripe && i >= 1) {
+      stLast = 0.5 + 0.5 * sin(6.0 * atan(z.y, z.x));
+      stSum += stLast;
+      stCount += 1.0;
+    }
 
     m = dot(z, z);
     trapR = min(trapR, m);
@@ -201,6 +213,23 @@ void main() {
               + 0.42 * pow(clamp(tl * 1.5, 0.0, 1.0), 0.60);
   float t = 0.55 * tIter + 0.45 * tTrap + drift;
 
+  // Stripe ripples fed into the exterior palette coordinate; relief lights the
+  // filaments by the derivative "normal" so they read as sculpted 3D ridges.
+  float ts = t;
+  if (escaped && doStripe && stCount > 1.5) {
+    float avg1 = stSum / stCount;
+    float avg2 = (stSum - stLast) / (stCount - 1.0);
+    float stripeVal = mix(avg2, avg1, fract(sn));
+    ts = t + u_stripes * (stripeVal - 0.5) * 0.9;
+  }
+  float relief = 1.0;
+  if (escaped && u_relief > 0.001) {
+    vec2 un = normalize(cdiv(z, dz));
+    float rlang = 2.3 + u_time * 0.05;
+    float refl = clamp((dot(un, vec2(cos(rlang), sin(rlang))) + 1.5) / 2.5, 0.0, 1.0);
+    relief = mix(1.0, 0.30 + 1.45 * refl, u_relief);
+  }
+
   float halo = exp(-deN * 0.03);  // wide falloff into black
   float fil = exp(-deN * 0.45);   // one-pixel filament riding the boundary
   float glow = 1.0 - exp(-acc * 0.05);
@@ -212,11 +241,12 @@ void main() {
   vec3 col;
   if (escaped) {
     float near = 0.15 + 0.85 * halo; // keep the empty far field genuinely black
-    col = pal(t) * (0.03 + 0.8 * halo);
-    col += pal(t + 0.20) * fil * 1.15 * aud;
+    col = pal(ts) * (0.03 + 0.8 * halo);
+    col += pal(ts + 0.20) * fil * 1.15 * aud;
     col += pal(t + 0.44) * fila * gk * 1.30 * near * aud;
     col += pal(t + 0.70) * core * gk * 0.70 * near * aud;
     col += pal(0.1 + t * 0.25 + drift) * glow * 0.13 * aud;
+    col *= relief;
   } else {
     // interior: deep black with a faint trap-coloured sheen
     float structure = exp(-tr * 2.6) + 0.6 * exp(-tl * 8.0);
