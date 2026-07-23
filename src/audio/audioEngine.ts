@@ -252,13 +252,17 @@ class AudioEngine {
     const rawMid = avg(11, 86); // ~260-2000 Hz
     const rawTreble = avg(86, 513); // ~2-12 kHz
 
-    // Normalise against this track's own dynamics first, then smooth with a fast
-    // attack and slow release.
-    const sm = (cur: number, raw: number) =>
-      raw > cur ? cur + (raw - cur) * 0.55 : cur + (raw - cur) * 0.12;
     const now = performance.now() / 1000;
     const dt = this.lastAt > 0 ? Math.min(0.25, Math.max(0.001, now - this.lastAt)) : 0.016;
     this.lastAt = now;
+    // Normalise against this track's own dynamics first, then smooth with a fast
+    // attack and slow release. Both time constants are in SECONDS, not frames, so
+    // the envelope is identical on a 60 Hz laptop and a 144 Hz screen — otherwise
+    // the reaction ran ~2.4x faster on a high-refresh display.
+    const attack = 1 - Math.exp(-dt / 0.021);
+    const release = 1 - Math.exp(-dt / 0.13);
+    const sm = (cur: number, raw: number) =>
+      cur + (raw - cur) * (raw > cur ? attack : release);
     this.sm.sub = sm(this.sm.sub, this.agc(this.gain.sub, rawSub, dt));
     this.sm.bass = sm(this.sm.bass, this.agc(this.gain.bass, rawBass, dt));
     this.sm.mid = sm(this.sm.mid, this.agc(this.gain.mid, rawMid, dt));
@@ -270,14 +274,15 @@ class AudioEngine {
 
     // beat: a spike in SUB-bass, not the whole bass band, so a loud vocal or a
     // snare in the 150-260 Hz range no longer trips the beat. Kick drums live
-    // below 140 Hz, which is exactly rawSub.
-    this.beatAvg = this.beatAvg * 0.985 + rawSub * 0.015;
-    this.beatCooldown = Math.max(0, this.beatCooldown - 1);
+    // below 140 Hz, which is exactly rawSub. All rates are per-second, so the
+    // detector behaves the same at any refresh rate.
+    this.beatAvg += (rawSub - this.beatAvg) * (1 - Math.exp(-dt / 1.1)); // ~1.1 s memory
+    this.beatCooldown = Math.max(0, this.beatCooldown - dt);
     if (this.beatCooldown === 0 && rawSub > 0.15 && rawSub > this.beatAvg * 1.5) {
       this.beatEnv = 1;
-      this.beatCooldown = 14;
+      this.beatCooldown = 0.23; // seconds — refractory period between beats
     }
-    this.beatEnv *= 0.92;
+    this.beatEnv *= Math.exp(-dt / 0.29); // decays over ~0.3 s
     f.beat = this.beatEnv;
   }
 }
