@@ -92,17 +92,18 @@ void main() {
   bool sq = abs(pw - 2.0) < 1e-3; // classic squaring: skip the transcendentals
 
   // ---- zoom schedule: 0 In, 1 Out, 2 Ping-Pong, 3 Hold ----------------------
-  float base = clamp(u_basezoom, -2.0, ZLIMIT);
-  float span = clamp(CRISP - base, 0.0, 12.0);   // stay below the fp32 mush zone
-  // Looping dive, so Zoom In / Zoom Out keep moving instead of clamping to a
-  // standstill after the first minute.
-  float phase = u_zspeedPhase * 0.25 / max(span, 0.001);
-  float depth = base;
-  if (u_zmode < 0.5) depth += span * diveCycle(phase);
-  else if (u_zmode < 1.5) depth += span * (1.0 - diveCycle(phase));
-  // Frequency scaled by the span, so Zoom Speed means the same rate in every mode.
+  // Zoom In / Out DIVE FOREVER: depth climbs at a real octaves-per-second rate and
+  // wraps instantly deep in the fp32 mush (where the picture has already melted to a
+  // soft wash) instead of easing back out — so it only ever moves inward, no rewind.
+  // Ping-Pong still breathes in and out on purpose; Hold parks the zoom.
+  float base = clamp(u_basezoom, -2.0, CRISP - 1.0);
+  float top = ZLIMIT - 0.8;                    // wrap deep in the mush (~18.2)
+  float travel = u_zspeedPhase * 1.25;         // octaves travelled; ~2.5 oct/s at max
+  float depth;
+  if (u_zmode < 1.5) depth = diveInfinite(travel, base, top, u_zmode);   // In / Out
   else if (u_zmode < 2.5)
-    depth += (span * 0.5) * (1.0 - cos(u_zspeedPhase * 0.25 * PI / max(span, 0.001)));
+    depth = base + (top - base) * (0.5 - 0.5 * cos(travel * PI / (top - base))); // Ping-Pong
+  else depth = base;                                                     // Hold
   depth = clamp(depth, -2.0, ZLIMIT);
   float scale = exp2(-depth);
 

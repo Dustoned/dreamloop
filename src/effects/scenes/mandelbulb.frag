@@ -57,12 +57,12 @@ void main() {
   if (u_bcam < 0.5) {
     orbMul = 1.0;                                                       // Orbit
   } else if (u_bcam < 1.5) {
-    // Looping approach. The old exponential ease crept toward nearD and then sat
-    // there for good, so after half a minute "Zoom In" was indistinguishable
-    // from Hold.
-    camDist = mix(farD, nearD, diveCycle(u_bspeedPhase * 0.035));   // Zoom In
+    // Bounded approach: the camera stops just outside the surface (nearD), so it
+    // eases back and dives again rather than plunging forever. Rate bumped from
+    // 0.035 to 0.085 so max Camera Speed is a lap every ~6s, not a slow creep.
+    camDist = mix(farD, nearD, diveCycle(u_bspeedPhase * 0.085));   // Zoom In
   } else if (u_bcam < 2.5) {
-    camDist = mix(farD, nearD, 0.5 - 0.5 * cos(u_bspeedPhase * 0.035 * PI)); // Ping-Pong
+    camDist = mix(farD, nearD, 0.5 - 0.5 * cos(u_bspeedPhase * 0.085 * PI)); // Ping-Pong
   }                                                                     // else Hold
   camDist = max(camDist, nearD);
 

@@ -69,6 +69,23 @@ float diveCycle(float phase) {
   return 1.0 - smoothstep(0.0, 1.0, u);
 }
 
+/**
+ * Endless ONE-WAY dive for the deep fractal scenes (Deep Zoom, Julia Morph), which
+ * dissolve into a low-frequency "mush" wash past their fp32 crispness limit.
+ * `travel` is the accumulated octaves of zoom — the integral of Zoom Speed, already
+ * scaled to a real octaves-per-second rate by the caller. Depth climbs steadily and
+ * wraps INSTANTLY at `top` instead of easing back out, so the camera only ever moves
+ * inward: no rewind, ever. Callers set `top` a little past their crispness limit, so
+ * the one-frame reset lands on an already-melted frame and is never seen — the mush
+ * fade is the cross-dissolve. mode 0 = In, 1 = Out.
+ */
+float diveInfinite(float travel, float base, float top, float mode) {
+  float range = max(top - base, 0.001);
+  float w = fract(travel / range);   // 0->1 sawtooth: climbs, then resets in one frame
+  if (mode >= 0.5) w = 1.0 - w;      // Zoom Out: fall outward forever instead
+  return base + range * w;
+}
+
 mat2 rot2(float a) {
   float c = cos(a);
   float s = sin(a);

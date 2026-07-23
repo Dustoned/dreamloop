@@ -24,12 +24,15 @@ void main() {
   // of the visible work and the shape drift was doing the rest, so every setting
   // looked the same and the control read as broken.
   #define KSPAN 2.5
+  // The Kali fold is not self-similar, so the dive is a bounded 2.5-octave sweep
+  // that eases back rather than an endless plunge. Rate bumped from 0.10 to 0.22 so
+  // max Zoom Speed is a lap every ~5s, not a barely-moving crawl.
   float depth = 0.0;
-  if (u_kmode < 0.5) depth = diveCycle(u_journeyPhase * 0.10);
-  else if (u_kmode < 1.5) depth = 1.0 - diveCycle(u_journeyPhase * 0.10);
+  if (u_kmode < 0.5) depth = diveCycle(u_journeyPhase * 0.22);
+  else if (u_kmode < 1.5) depth = 1.0 - diveCycle(u_journeyPhase * 0.22);
   // Frequency tied to the dive rate: widening KSPAN without touching this left
   // Ping-Pong travelling three times faster than Zoom In on the same slider.
-  else if (u_kmode < 2.5) depth = 0.5 - 0.5 * cos(u_journeyPhase * 0.10 * PI);
+  else if (u_kmode < 2.5) depth = 0.5 - 0.5 * cos(u_journeyPhase * 0.22 * PI);
   float scale = exp2(-depth * KSPAN);
 
   vec2 p = ctr(v_uv) * 2.0 / u_kzoom * scale;

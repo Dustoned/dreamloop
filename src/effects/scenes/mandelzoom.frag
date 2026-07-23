@@ -69,30 +69,25 @@ vec2 journeyCentre(vec2 target, float t, float rad) {
 }
 
 void main() {
-  // ---- zoom schedule: 0 In, 1 Out, 2 Ping-Pong, 3 Hold ---------------------
-  // The dive covers a fixed span and then loops. Running the depth off a bare
-  // clock instead used to clamp at the precision limit, so after a minute or two
-  // Zoom In and Zoom Out simply stopped moving and never started again.
-  float base = clamp(u_basezoom, 0.0, ZLIMIT);
-  // Cap the PEAK, not the span: the dive runs base..base+span, so capping only the
-  // span let a high Start Depth push every cycle into the mush fade below.
-  float span = clamp(CRISP - base, 0.0, 13.0);
-  float phase = u_zspeedPhase * 0.25 / max(span, 0.001);
-  float depth = base;
+  // ---- zoom schedule: 0 In, 1 Out, 2 Ping-Pong, 3 Hold, 4 Journey ----------
+  // Zoom In / Out DIVE FOREVER: depth climbs at a real octaves-per-second rate and
+  // wraps instantly once it is deep in the fp32 mush — where the picture has already
+  // melted to a soft wash — instead of easing back out. So the camera only ever
+  // moves inward: no rewind. The rate used to be u_zspeedPhase * 0.25 / span, which
+  // at max Zoom Speed crawled at about a third of an octave per second; now max is a
+  // brisk ~2.5 octaves per second.
+  float base = clamp(u_basezoom, 0.0, CRISP - 1.0);   // start in the crisp zone
+  float top = ZLIMIT - 0.8;                            // wrap deep in the mush (~18.2)
+  float travel = u_zspeedPhase * 1.25;                 // octaves travelled so far
   bool journey = u_zmode >= 3.5;
-  if (u_zmode < 0.5) depth += span * diveCycle(phase);
-  else if (u_zmode < 1.5) depth += span * (1.0 - diveCycle(phase));
-  // Ping-Pong used a fixed frequency, so over a 13-octave span it travelled about
-  // three times faster than Zoom In at the same Zoom Speed. Tying the frequency to
-  // the span makes one slider mean one speed in every mode.
+  float depth;
+  if (u_zmode < 1.5) depth = diveInfinite(travel, base, top, u_zmode);   // In / Out
   else if (u_zmode < 2.5)
-    depth += (span * 0.5) * (1.0 - cos(u_zspeedPhase * 0.25 * PI / max(span, 0.001)));
-  // Journey (mode 4): hold the zoom and travel the boundary instead. This is the
-  // only genuinely endless option for the Mandelbrot — you cannot dive forever
-  // (fp32 dissolves near 19 octaves) but you CAN crawl the infinitely-detailed
-  // edge forever at a fixed, safe magnification. Start Depth lets you set how
-  // close in the journey runs, on top of a tight default.
-  else depth += 4.6;
+    depth = base + (top - base) * (0.5 - 0.5 * cos(travel * PI / (top - base))); // Ping-Pong
+  // Journey (mode 4): hold the zoom and travel the boundary instead — a fixed, safe
+  // magnification, crawling the infinitely-detailed edge. Start Depth sets how close.
+  else if (journey) depth = base + 4.6;
+  else depth = base;                                                     // Hold
   depth = clamp(depth, 0.0, ZLIMIT);
   float scale = exp2(-depth);
 
@@ -101,7 +96,7 @@ void main() {
   // In Journey the wander radius tracks the view size (VIEW*scale), scaled up a bit
   // so the neighbourhood is explored without straying onto the smooth flats.
   vec2 centre = journey
-    ? journeyCentre(diveCenter(u_dive), u_zspeedPhase * 0.9, VIEW * scale * 2.5)
+    ? journeyCentre(diveCenter(u_dive), u_zspeedPhase * 3.0, VIEW * scale * 3.6)
     : diveCenter(u_dive);
   vec2 pix = centre + sp * scale;
   float px = VIEW * scale / u_res.y; // world units per screen pixel
