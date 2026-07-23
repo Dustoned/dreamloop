@@ -454,45 +454,31 @@ export class Engine {
    * deliberately short rather than filtered at load (bounded-ness is not the same as
    * staying detailed). Both sit in the Seahorse Valley's endless spiral filigree.
    */
-  private static readonly INF_CENTERS: [number, number][] = [
-    [-0.7436438870371587, 0.13182590420531197], // Seahorse Valley
-    [-0.7269, 0.1889], // Seahorse Valley — second spiral
-  ];
-  private infIdx = 0;
-  private infDepth = 6;
-  private static readonly INF_LO = 6.0;
-  private static readonly INF_HI = 30.0;
+  private static readonly INF_CENTER: [number, number] = [-0.7436438870371587, 0.13182590420531197]; // Seahorse Valley
+  private infTravel = 0;
+  private static readonly INF_MAX = 42.0; // deepest crisp depth the real-time budget affords
+  private static readonly INF_KNEE = 6.0; // last octaves are eased so the zoom never stops dead
 
   /**
-   * The ∞ perpetual dive. Depth climbs at the Zoom Speed; when it reaches a crisp,
-   * affordable ceiling it jumps to the next centre and restarts shallow — so it keeps
-   * finding NEW fractal territory forever instead of holding on one spot (or running
-   * past the precision/iteration budget into a flat screen). A fade near both ends of
-   * each dive hides the centre swap.
+   * The ∞ continuous dive: ONE unbroken zoom into a fixed deep centre — no fade, no
+   * jump, no reset, ever. Depth climbs at the Zoom Speed and, in the last few octaves
+   * before the real-time precision/iteration ceiling, eases in asymptotically so the
+   * camera keeps creeping inward forever instead of stopping dead or melting to flat.
+   * (Real-time cannot zoom literally without end — each octave costs more iterations —
+   * so it decelerates near the floor rather than resetting.)
    */
   private updateInfiniteDive(st: ParamState): { depth: number; fade: number; cx: number; cy: number } {
-    const list = Engine.INF_CENTERS;
-    // Self-heal any out-of-range state (NaN, or a stale value) so it can never stick
-    // on a black or flat frame.
-    if (!(this.infDepth >= Engine.INF_LO - 0.5 && this.infDepth <= Engine.INF_HI + 0.5)) {
-      this.infDepth = Engine.INF_LO;
-    }
+    if (!(this.infTravel >= 0)) this.infTravel = 0; // self-heal NaN/negative
     const zspeed = num(st.params['scene.mandelzoom.zspeed'], 0.7);
     const speed = num(st.params['global.speed'], 1);
-    this.infDepth += this.lastDt * Math.max(0, zspeed) * speed * 1.25;
-    if (this.infDepth >= Engine.INF_HI) {
-      this.infIdx = (this.infIdx + 1) % list.length;
-      this.infDepth = Engine.INF_LO;
-    }
-    const d = this.infDepth;
-    const ss = (a: number, b: number, x: number): number => {
-      const t = Math.min(1, Math.max(0, (x - a) / (b - a)));
-      return t * t * (3 - 2 * t);
-    };
-    const fade =
-      0.08 + 0.92 * ss(Engine.INF_LO, Engine.INF_LO + 3, d) * ss(Engine.INF_HI, Engine.INF_HI - 3, d);
-    const [cx, cy] = list[this.infIdx];
-    return { depth: d, fade, cx, cy };
+    this.infTravel += this.lastDt * Math.max(0, zspeed) * speed * 1.25;
+
+    const lin = this.infTravel;
+    const knee = Engine.INF_MAX - Engine.INF_KNEE;
+    const depth =
+      lin < knee ? lin : Engine.INF_MAX - Engine.INF_KNEE * Math.exp(-(lin - knee) / Engine.INF_KNEE);
+    const [cx, cy] = Engine.INF_CENTER;
+    return { depth, fade: 1, cx, cy };
   }
 
   /**
