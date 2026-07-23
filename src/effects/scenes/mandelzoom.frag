@@ -16,6 +16,9 @@ uniform float u_trapshape;   // orbit-trap shape: line / cross / circle / diamon
 uniform float u_engine;      // 0 Classic (fp32 loop), 1 Infinite (perturbation)
 uniform sampler2D u_ref;     // high-precision reference orbit (Zx, Zy per iteration)
 uniform float u_refLen;      // number of valid reference samples
+uniform float u_pdepth;      // ∞ dive depth, driven CPU-side (perpetual-dive cycle)
+uniform float u_fade;        // ∞ cross-fade at each centre swap (1 = full brightness)
+uniform vec2 u_pcenter;      // ∞ active dive centre (matches the reference orbit)
 
 // Deep zoom into 2D escape-time fractals. Colour comes from the smooth iteration
 // count and a two-channel orbit trap; brightness comes from the exterior distance
@@ -95,7 +98,7 @@ void main() {
   float base = clamp(u_basezoom, 0.0, CRISP - 1.0);
   float depth;
   if (infDive) {
-    depth = min(base + u_zspeedPhase * 1.25, PMAX);   // dive and hold; no rewind, ever
+    depth = clamp(u_pdepth, 0.0, PMAX);   // CPU drives the perpetual-dive cycle
   } else {
     float top = ZLIMIT - 0.8;
     float travel = u_zspeedPhase * 1.25;
@@ -110,10 +113,14 @@ void main() {
   bool journey = (!inf) && (u_zmode >= 3.5);
 
   // ---- plane ---------------------------------------------------------------
+  // In ∞ the centre comes from the CPU (it cycles between dive targets); in Classic
+  // it is the picked Dive Point. Both paths must use the same centre the reference
+  // orbit was built for, so the fp32/perturbation handoff at depth 9 is seamless.
+  vec2 dcen = inf ? u_pcenter : diveCenter(u_dive);
   vec2 sp = rot2(u_spinPhase * 0.06) * (ctr(v_uv) * VIEW);
   vec2 centre = journey
-    ? journeyCentre(diveCenter(u_dive), u_zspeedPhase * 3.0, VIEW * scale * 3.6)
-    : diveCenter(u_dive);
+    ? journeyCentre(dcen, u_zspeedPhase * 3.0, VIEW * scale * 3.6)
+    : dcen;
   vec2 pix = centre + sp * scale;
   float px = VIEW * scale / u_res.y; // world units per screen pixel
 
@@ -136,7 +143,7 @@ void main() {
     // the derivative all read that, so the colouring below is identical to Classic.
     vec2 dc0 = sp * scale;         // δc
     vec2 dlt = vec2(0.0);          // δ_0
-    maxIter = min(u_refLen - 1.0, u_iters * 10.0);
+    maxIter = min(u_refLen - 1.0, u_iters * 15.0);
     int budget = int(maxIter);
     for (int i = 0; i < 4096; i++) {
       if (i >= budget) break;
@@ -300,5 +307,6 @@ void main() {
   col = mix(col, low, mush * 0.85);
 
   col = col / (1.0 + col * 0.32); // soft rolloff: highlights hold, blacks stay black
+  col *= u_fade;                  // ∞ cross-fade hides each centre swap (1.0 otherwise)
   fragColor = vec4(max(col, 0.0), 1.0);
 }
