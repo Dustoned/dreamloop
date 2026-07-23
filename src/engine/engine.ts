@@ -46,10 +46,8 @@ export class Engine {
   private flameAccum: PingPong | null = null;
   private flameProg: Program | null = null;
   private flameFadeProg: Program | null = null;
-  /** Perturbation reference orbit (Deep Zoom ∞), computed in fp64 and uploaded as RG32F. */
-  private refTex: WebGLTexture | null = null;
-  private refKey = '';
-  private refLen = 0;
+  /** Perturbation reference orbits (Deep Zoom ∞), computed in fp64, cached per centre. */
+  private refCache = new Map<string, { tex: WebGLTexture; len: number }>();
   /** Real elapsed seconds this frame (unscaled), for frame-rate-independent decay. */
   private lastDt = 1 / 60;
   private readonly palette: PaletteTexture;
@@ -354,29 +352,19 @@ export class Engine {
       sp.bindTex('u_palette', this.palette.tex, 0);
       if (this.sim && sceneDef.passes === 'sim') sp.bindTex('u_prev', this.sim.read.tex, 2);
       if (sceneDef.id === 'mandelzoom') {
-        // Perturbation reference orbit + the ∞ perpetual-dive state (harmless in Classic).
-        const eng = num(st.params['scene.mandelzoom.engine'], 1);
-        const zmode = num(st.params['scene.mandelzoom.zmode'], 0);
-        let pdepth = 0;
-        let fade = 1;
-        let cx: number;
-        let cy: number;
-        if (eng > 0.5 && zmode < 0.5) {
-          const r = this.updateInfiniteDive(st);
-          pdepth = r.depth;
-          fade = r.fade;
-          cx = r.cx;
-          cy = r.cy;
-        } else {
-          const dive = Math.round(num(st.params['scene.mandelzoom.dive'], 0));
-          [cx, cy] = Engine.REF_CENTERS[Math.max(0, Math.min(3, dive))];
-        }
-        this.ensureReference(cx, cy);
-        sp.bindTex('u_ref', this.refTex, 3);
-        sp.set1f('u_refLen', this.refLen);
-        sp.set1f('u_pdepth', pdepth);
-        sp.set1f('u_fade', fade);
-        sp.set2f('u_pcenter', cx, cy);
+        // ∞ engine: two cross-fading perturbation layers for a constant-speed endless
+        // dive. Advance and bind every frame (references are cached, so this is cheap);
+        // the Classic engine path simply ignores these uniforms.
+        const r = this.updateInfiniteDive(st);
+        const refA = this.getReference(r.ax, r.ay);
+        const refB = this.getReference(r.bx, r.by);
+        sp.bindTex('u_ref', refA.tex, 3);
+        sp.bindTex('u_refB', refB.tex, 4);
+        sp.set1f('u_refLen', refA.len);
+        sp.set1f('u_refLenB', refB.len);
+        sp.set1f('u_pdepthA', r.depthA);
+        sp.set1f('u_pdepthB', r.depthB);
+        sp.set1f('u_wA', r.wA);
       }
       glc.drawFullscreen();
     }
@@ -439,61 +427,69 @@ export class Engine {
     this.frameIdx++;
   }
 
-  /** Dive-target centres at full fp64 precision, indexed by the Deep Zoom "dive" param. */
-  private static readonly REF_CENTERS: [number, number][] = [
+  /**
+   * Centres the ∞ dive travels through. HAND-VERIFIED to stay crisp all the way down
+   * (measured detail at depth 16/26/33) — most Mandelbrot points, even on the boundary,
+   * zoom into a flat interior or run out of reference, so this list is deliberately
+   * short and curated, not auto-filtered. Both sit in the Seahorse Valley filigree.
+   */
+  private static readonly INF_CENTERS: [number, number][] = [
     [-0.7436438870371587, 0.13182590420531197], // Seahorse Valley
-    [0.2925755, 0.0149977], // Elephant Valley
-    [-0.7454291, 0.1130087], // Seahorse (deeper spiral)
-    [-1.74997, 0.0], // Real-axis mini-brot
+    [-0.7269, 0.1889], // Seahorse Valley — second spiral
   ];
-
-  /**
-   * Centres the ∞ auto-dive cycles through. These are HAND-VERIFIED to stay crisp all
-   * the way down (measured detail at depth 16/26/33) — most Mandelbrot points, even on
-   * the boundary, zoom into a flat interior or run out of reference, so this list is
-   * deliberately short rather than filtered at load (bounded-ness is not the same as
-   * staying detailed). Both sit in the Seahorse Valley's endless spiral filigree.
-   */
-  private static readonly INF_CENTER: [number, number] = [-0.7436438870371587, 0.13182590420531197]; // Seahorse Valley
   private infTravel = 0;
-  private static readonly INF_MAX = 42.0; // deepest crisp depth the real-time budget affords
-  private static readonly INF_KNEE = 6.0; // last octaves are eased so the zoom never stops dead
+  private static readonly INF_LO = 9.0; // shallowest depth of a layer (perturbation-accurate)
+  private static readonly INF_PERIOD = 30.0; // octaves per dive before it hands to the crossfade
 
   /**
-   * The ∞ continuous dive: ONE unbroken zoom into a fixed deep centre — no fade, no
-   * jump, no reset, ever. Depth climbs at the Zoom Speed and, in the last few octaves
-   * before the real-time precision/iteration ceiling, eases in asymptotically so the
-   * camera keeps creeping inward forever instead of stopping dead or melting to flat.
-   * (Real-time cannot zoom literally without end — each octave costs more iterations —
-   * so it decelerates near the floor rather than resetting.)
+   * The ∞ constant-speed endless dive. TWO perturbation layers, offset half a cycle,
+   * each dive continuously; the cross-fade weight hands off from one to the other as
+   * each nears its precision floor — so the zoom runs at a CONSTANT speed forever with
+   * no reset, no black fade and no jump (the classic seamless-infinite-zoom trick).
+   * The two layers ride different centres, so it keeps morphing into fresh territory.
    */
-  private updateInfiniteDive(st: ParamState): { depth: number; fade: number; cx: number; cy: number } {
+  private updateInfiniteDive(st: ParamState): {
+    depthA: number;
+    depthB: number;
+    wA: number;
+    ax: number;
+    ay: number;
+    bx: number;
+    by: number;
+  } {
     if (!(this.infTravel >= 0)) this.infTravel = 0; // self-heal NaN/negative
     const zspeed = num(st.params['scene.mandelzoom.zspeed'], 0.7);
     const speed = num(st.params['global.speed'], 1);
     this.infTravel += this.lastDt * Math.max(0, zspeed) * speed * 1.25;
 
-    const lin = this.infTravel;
-    const knee = Engine.INF_MAX - Engine.INF_KNEE;
-    const depth =
-      lin < knee ? lin : Engine.INF_MAX - Engine.INF_KNEE * Math.exp(-(lin - knee) / Engine.INF_KNEE);
-    const [cx, cy] = Engine.INF_CENTER;
-    return { depth, fade: 1, cx, cy };
+    const P = Engine.INF_PERIOD;
+    const LO = Engine.INF_LO;
+    const N = Engine.INF_CENTERS.length;
+    const phase = this.infTravel / P;
+    const fA = phase - Math.floor(phase);
+    const pB = phase + 0.5;
+    const fB = pB - Math.floor(pB);
+    const wA = Math.sin(Math.PI * fA) ** 2; // 0 at the seams, 1 mid-dive; wB = 1 - wA
+    const iA = ((Math.floor(phase) % N) + N) % N;
+    const iB = ((Math.floor(pB) % N) + N) % N;
+    const [ax, ay] = Engine.INF_CENTERS[iA];
+    const [bx, by] = Engine.INF_CENTERS[iB];
+    return { depthA: LO + P * fA, depthB: LO + P * fB, wA, ax, ay, bx, by };
   }
 
   /**
-   * Perturbation reference orbit for the given Deep Zoom centre. Computed once in fp64
-   * per centre and uploaded as an RG32F texture the shader samples by iteration index.
-   * This is what lets Deep Zoom ∞ keep resolving crisp detail far past the fp32 wall:
-   * every pixel iterates only a tiny deviation from this one high-precision orbit.
+   * Perturbation reference orbit for a Deep Zoom centre, computed once in fp64 and
+   * cached as an RG32F texture the shader samples by iteration index. Every pixel then
+   * iterates only a tiny deviation from this one high-precision orbit — that is what
+   * lets ∞ resolve crisp detail far past the fp32 wall.
    */
-  private ensureReference(cx: number, cy: number): void {
+  private getReference(cx: number, cy: number): { tex: WebGLTexture; len: number } {
+    const key = `${cx},${cy}`;
+    const hit = this.refCache.get(key);
+    if (hit) return hit;
+
     const gl = this.glc.gl;
     const MAXREF = 4096;
-    const key = `${cx},${cy}`;
-    if (key === this.refKey && this.refTex) return;
-    this.refKey = key;
-
     const data = new Float32Array(MAXREF * 2);
     let zx = 0,
       zy = 0,
@@ -508,17 +504,18 @@ export class Engine {
       if (zx * zx + zy * zy > 1e6) {
         n++;
         break;
-      } // reference escaped (won't happen for an in-set centre)
+      }
     }
-    this.refLen = n;
-
-    if (!this.refTex) this.refTex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, this.refTex);
+    const tex = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, MAXREF, 1, 0, gl.RG, gl.FLOAT, data);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const entry = { tex, len: n };
+    this.refCache.set(key, entry);
+    return entry;
   }
 
   /**

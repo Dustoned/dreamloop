@@ -14,11 +14,13 @@ uniform float u_stripes;     // stripe average colouring: detail in the smooth e
 uniform float u_relief;      // fake-3D relief lit by the complex derivative
 uniform float u_trapshape;   // orbit-trap shape: line / cross / circle / diamond
 uniform float u_engine;      // 0 Classic (fp32 loop), 1 Infinite (perturbation)
-uniform sampler2D u_ref;     // high-precision reference orbit (Zx, Zy per iteration)
-uniform float u_refLen;      // number of valid reference samples
-uniform float u_pdepth;      // ∞ dive depth, driven CPU-side (perpetual-dive cycle)
-uniform float u_fade;        // ∞ cross-fade at each centre swap (1 = full brightness)
-uniform vec2 u_pcenter;      // ∞ active dive centre (matches the reference orbit)
+uniform sampler2D u_ref;     // reference orbit for ∞ layer A (Zx, Zy per iteration)
+uniform float u_refLen;      // valid samples in layer A's reference
+uniform sampler2D u_refB;    // reference orbit for ∞ layer B
+uniform float u_refLenB;     // valid samples in layer B's reference
+uniform float u_pdepthA;     // ∞ layer A depth (CPU-driven, constant-speed dive)
+uniform float u_pdepthB;     // ∞ layer B depth (offset half a cycle)
+uniform float u_wA;          // ∞ cross-fade weight for layer A (1-wA for B)
 
 // Deep zoom into 2D escape-time fractals. Colour comes from the smooth iteration
 // count and a two-channel orbit trap; brightness comes from the exterior distance
@@ -80,108 +82,143 @@ vec2 journeyCentre(vec2 target, float t, float rad) {
   return target + w * rad;
 }
 
+// One perturbation layer of the ∞ engine: a crisp Mandelbrot at the given depth,
+// using the given reference orbit (its centre is implicit in the reference — the
+// pixel only ever works with the tiny offset δc, so no absolute centre is needed).
+// Two of these, at different depths and centres, cross-fade into an endless zoom.
+vec3 perturbLayer(float depth, sampler2D refTex, float refLen) {
+  float scale = exp2(-depth);
+  vec2 sp = rot2(u_spinPhase * 0.06) * (ctr(v_uv) * VIEW);
+  float px = VIEW * scale / u_res.y;
+  vec2 dc0 = sp * scale;    // δc
+  vec2 dlt = vec2(0.0);
+  vec2 z = vec2(0.0), dz = vec2(0.0);
+  float trapR = 1e9, trapL = 1e9, acc = 0.0, m = 0.0, esc = -1.0;
+  float stSum = 0.0, stCount = 0.0, stLast = 0.0;
+  bool doStripe = u_stripes > 0.001;
+  float maxIter = min(refLen - 1.0, u_iters * 10.0);
+  int budget = int(maxIter);
+  for (int i = 0; i < 4096; i++) {
+    if (i >= budget) break;
+    vec2 Zi = texelFetch(refTex, ivec2(i, 0), 0).xy;
+    vec2 zi = Zi + dlt;
+    dz = 2.0 * cmul(zi, dz) + vec2(1.0, 0.0);
+    dlt = 2.0 * cmul(Zi, dlt) + cmul(dlt, dlt) + dc0;
+    z = texelFetch(refTex, ivec2(i + 1, 0), 0).xy + dlt;
+    if (doStripe) { stLast = 0.5 + 0.5 * sin(6.0 * atan(z.y, z.x)); stSum += stLast; stCount += 1.0; }
+    m = dot(z, z);
+    trapR = min(trapR, m);
+    float td;
+    if (u_trapshape < 0.5) td = abs(z.x);
+    else if (u_trapshape < 1.5) td = min(abs(z.x), abs(z.y));
+    else if (u_trapshape < 2.5) td = abs(length(z) - 1.0);
+    else td = abs(abs(z.x) - abs(z.y)) * 0.70711;
+    trapL = min(trapL, td);
+    acc += 1.0 / (1.0 + 22.0 * m);
+    if (m > BAIL) { esc = float(i); break; }
+  }
+  bool escaped = esc >= 0.0;
+  float sn = maxIter;
+  float deN = 1e6;
+  if (escaped) {
+    float lz = 0.5 * log2(max(m, 1.0001));
+    sn = esc - log2(max(lz, 1e-6)); // lpw = 1 for Mandelbrot
+    float dl2 = dot(dz, dz), dd;
+    if (dl2 > 1e-30 && dl2 < 1e30) dd = 0.5 * sqrt(m) * log(m) / sqrt(dl2);
+    else if (dl2 >= 1e30) dd = 0.0;
+    else dd = 1e6 * px;
+    deN = dd / max(px, 1e-30);
+  }
+  float tr = sqrt(min(trapR, 4.0)), tl = min(trapL, 2.0);
+  float tIter = sn * 0.021;
+  float tTrap = 0.85 * pow(clamp(tr * 0.55, 0.0, 1.0), 0.45)
+              + 0.45 * pow(clamp(tl * 1.6, 0.0, 1.0), 0.55);
+  float dither = (hash21(gl_FragCoord.xy) - 0.5) / 512.0;
+  float drift = u_time * 0.02 + dither;
+  float t = mix(tIter, tTrap, clamp(u_trapmix, 0.0, 1.0)) + drift;
+  float ts = t;
+  if (escaped && doStripe && stCount > 1.5) {
+    float a1 = stSum / stCount, a2 = (stSum - stLast) / (stCount - 1.0);
+    ts = t + u_stripes * (mix(a2, a1, fract(sn)) - 0.5) * 0.9;
+  }
+  float relief = 1.0;
+  if (escaped && u_relief > 0.001) {
+    vec2 un = normalize(cdiv(z, dz));
+    float lang = 2.3 + u_time * 0.05;
+    float refl = clamp((dot(un, vec2(cos(lang), sin(lang))) + 1.5) / 2.5, 0.0, 1.0);
+    relief = mix(1.0, 0.30 + 1.45 * refl, u_relief);
+  }
+  float halo = exp(-deN * 0.035), fil = exp(-deN * 0.45), glow = 1.0 - exp(-acc * 0.05);
+  float aud = 1.0 + u_audio.x * 0.35;
+  vec3 col;
+  if (escaped) {
+    col = pal(ts) * (0.035 + 0.85 * halo);
+    col += pal(ts + 0.22) * fil * 1.2 * aud;
+    col *= relief;
+  } else {
+    float structure = exp(-tr * 2.4) + 0.55 * exp(-tl * 7.0);
+    col = pal(mix(t, tTrap * 0.9 + drift, 0.65)) * (0.015 + 0.24 * structure);
+  }
+  col += pal(0.12 + t * 0.2 + u_time * 0.02) * glow * 0.16 * aud;
+  return col / (1.0 + col * 0.32);
+}
+
 void main() {
-  // ---- zoom schedule: 0 In, 1 Out, 2 Ping-Pong, 3 Hold, 4 Journey ----------
-  // Zoom In / Out DIVE FOREVER: depth climbs at a real octaves-per-second rate and
-  // wraps instantly once it is deep in the fp32 mush — where the picture has already
-  // melted to a soft wash — instead of easing back out. So the camera only ever
-  // moves inward: no rewind. The rate used to be u_zspeedPhase * 0.25 / span, which
-  // at max Zoom Speed crawled at about a third of an octave per second; now max is a
-  // brisk ~2.5 octaves per second.
-  // Engine 0 = Classic: the fp32 looping dive (wraps in the mush around 19 octaves).
-  // Engine 1 = Infinite: perturbation. On Zoom In the depth climbs FOREVER and never
-  // rewinds — it keeps resolving crisp detail because each pixel iterates only a tiny
-  // deviation from one high-precision reference orbit instead of its own coordinate.
+  // ---- Infinite engine: two continuously-diving perturbation layers cross-fade
+  // into each other, so the zoom runs at a CONSTANT speed forever — no reset, no
+  // black fade, no jump. This is the classic seamless-infinite-zoom construction:
+  // as one layer nears its precision floor it fades out while the other (offset half
+  // a cycle, on a different centre) is at full strength, and vice versa.
   bool inf = u_engine > 0.5;
   bool infDive = inf && u_zmode < 0.5;
-
-  float base = clamp(u_basezoom, 0.0, CRISP - 1.0);
-  float depth;
   if (infDive) {
-    depth = clamp(u_pdepth, 0.0, PMAX);   // CPU drives the perpetual-dive cycle
-  } else {
-    float top = ZLIMIT - 0.8;
-    float travel = u_zspeedPhase * 1.25;
-    if (u_zmode < 1.5) depth = diveInfinite(travel, base, top, u_zmode);
-    else if (u_zmode < 2.5)
-      depth = base + (top - base) * (0.5 - 0.5 * cos(travel * PI / (top - base)));
-    else if (u_zmode >= 3.5) depth = base + 4.6;   // Journey
-    else depth = base;                             // Hold
-    depth = clamp(depth, 0.0, ZLIMIT);
+    vec3 cA = perturbLayer(u_pdepthA, u_ref, u_refLen);
+    vec3 cB = perturbLayer(u_pdepthB, u_refB, u_refLenB);
+    fragColor = vec4(max(mix(cB, cA, clamp(u_wA, 0.0, 1.0)), 0.0), 1.0);
+    return;
   }
-  float scale = exp2(-depth);
-  bool journey = (!inf) && (u_zmode >= 3.5);
 
-  // ---- plane ---------------------------------------------------------------
-  // In ∞ the centre comes from the CPU (it cycles between dive targets); in Classic
-  // it is the picked Dive Point. Both paths must use the same centre the reference
-  // orbit was built for, so the fp32/perturbation handoff at depth 9 is seamless.
-  vec2 dcen = inf ? u_pcenter : diveCenter(u_dive);
+  // ---- Classic engine: the fp32 looping dive (all formulas) -----------------
+  float base = clamp(u_basezoom, 0.0, CRISP - 1.0);
+  float top = ZLIMIT - 0.8;
+  float travel = u_zspeedPhase * 1.25;
+  float depth;
+  if (u_zmode < 1.5) depth = diveInfinite(travel, base, top, u_zmode);
+  else if (u_zmode < 2.5)
+    depth = base + (top - base) * (0.5 - 0.5 * cos(travel * PI / (top - base)));
+  else if (u_zmode >= 3.5) depth = base + 4.6;   // Journey
+  else depth = base;                             // Hold
+  depth = clamp(depth, 0.0, ZLIMIT);
+  float scale = exp2(-depth);
+  bool journey = u_zmode >= 3.5;
+
+  vec2 dcen = diveCenter(u_dive);
   vec2 sp = rot2(u_spinPhase * 0.06) * (ctr(v_uv) * VIEW);
   vec2 centre = journey
     ? journeyCentre(dcen, u_zspeedPhase * 3.0, VIEW * scale * 3.6)
     : dcen;
   vec2 pix = centre + sp * scale;
-  float px = VIEW * scale / u_res.y; // world units per screen pixel
-
-  // Perturbation only becomes accurate once the per-pixel offset from the centre is
-  // tiny; above ~depth 9 it is, and below it plain fp32 is crisp anyway, so the two
-  // paths meet seamlessly at 9 (identical Mandelbrot there).
-  bool usePerturb = infDive && depth > 9.0;
+  float px = VIEW * scale / u_res.y;
 
   float trapR = 1e9, trapL = 1e9, acc = 0.0, m = 0.0, esc = -1.0;
-  vec2 z = vec2(0.0), dz = vec2(0.0);
   float stSum = 0.0, stCount = 0.0, stLast = 0.0;
   bool doStripe = u_stripes > 0.001;
-  float lpw = 1.0;       // log2(power); Mandelbrot = 1
-  float maxIter;
-
-  if (usePerturb) {
-    // ---- perturbation iteration (Mandelbrot z^2 + c) ----------------------
-    // δ_{n+1} = 2·Z_n·δ_n + δ_n² + δc, with Z_n the high-precision reference and δc
-    // the pixel's tiny offset. The actual orbit is z_n = Z_n + δ_n; escape, traps and
-    // the derivative all read that, so the colouring below is identical to Classic.
-    vec2 dc0 = sp * scale;         // δc
-    vec2 dlt = vec2(0.0);          // δ_0
-    maxIter = min(u_refLen - 1.0, u_iters * 15.0);
-    int budget = int(maxIter);
-    for (int i = 0; i < 4096; i++) {
-      if (i >= budget) break;
-      vec2 Zi = texelFetch(u_ref, ivec2(i, 0), 0).xy;
-      vec2 zi = Zi + dlt;                                 // z_i
-      dz = 2.0 * cmul(zi, dz) + vec2(1.0, 0.0);           // z'_{i+1}
-      dlt = 2.0 * cmul(Zi, dlt) + cmul(dlt, dlt) + dc0;   // δ_{i+1}
-      z = texelFetch(u_ref, ivec2(i + 1, 0), 0).xy + dlt; // z_{i+1}
-      if (doStripe) { stLast = 0.5 + 0.5 * sin(6.0 * atan(z.y, z.x)); stSum += stLast; stCount += 1.0; }
-      m = dot(z, z);
-      trapR = min(trapR, m);
-      float td;
-      if (u_trapshape < 0.5) td = abs(z.x);
-      else if (u_trapshape < 1.5) td = min(abs(z.x), abs(z.y));
-      else if (u_trapshape < 2.5) td = abs(length(z) - 1.0);
-      else td = abs(abs(z.x) - abs(z.y)) * 0.70711;
-      trapL = min(trapL, td);
-      acc += 1.0 / (1.0 + 22.0 * m);
-      if (m > BAIL) { esc = float(i); break; }
-    }
-  } else {
-  // ---- classic iteration (all formulas, fp32) -----------------------------
   float ja = u_time * 0.06;
   vec2 jc = 0.7885 * vec2(cos(ja), sin(ja)) + 0.055 * vec2(sin(ja * 2.3), cos(ja * 1.7));
   float jm = clamp(u_juliamix, 0.0, 1.0);
   vec2 c = mix(pix, jc, jm);
-  z = pix * jm;
-  dz = vec2(jm, 0.0);
+  vec2 z = pix * jm;
+  vec2 dz = vec2(jm, 0.0);
   float dc = 1.0 - jm;
   float fShip = (u_formula >= 0.5 && u_formula < 1.5) ? 1.0 : 0.0;
   float fTri = (u_formula >= 1.5 && u_formula < 2.5) ? 1.0 : 0.0;
   float fCeltic = (u_formula >= 2.5 && u_formula < 3.5) ? 1.0 : 0.0;
   float fPhoenix = (u_formula >= 3.5) ? 1.0 : 0.0;
   float pw = clamp(u_power, 2.0, 8.0);
-  lpw = max(log2(pw), 0.5);
+  float lpw = max(log2(pw), 0.5);
   bool sq = abs(pw - 2.0) < 1e-3; // classic squaring: skip the transcendentals
   int n = int(clamp(u_iters, 16.0, 400.0));
-  maxIter = float(n);
+  float maxIter = float(n);
   vec2 zPrev = vec2(0.0);
 
   for (int i = 0; i < 400; i++) {
@@ -232,7 +269,6 @@ void main() {
       break;
     }
   }
-  } // end classic path
 
   bool escaped = esc >= 0.0;
 
@@ -300,13 +336,11 @@ void main() {
   col += pal(0.12 + t * 0.2 + u_time * 0.02) * glow * 0.16 * aud;
 
   // ---- fp32 breakup: melt into a low-frequency version instead of hash noise -
-  // Perturbation stays crisp arbitrarily deep, so it never melts into the mush wash.
-  float mush = usePerturb ? 0.0 : smoothstep(CRISP, ZLIMIT, depth);
+  float mush = smoothstep(CRISP, ZLIMIT, depth);
   vec3 low = pal(t * 0.3 + 0.12 + u_time * 0.02)
            * (0.05 + 0.62 * sqrt(clamp(luma(col) * 1.5, 0.0, 1.0)));
   col = mix(col, low, mush * 0.85);
 
   col = col / (1.0 + col * 0.32); // soft rolloff: highlights hold, blacks stay black
-  col *= u_fade;                  // ∞ cross-fade hides each centre swap (1.0 otherwise)
   fragColor = vec4(max(col, 0.0), 1.0);
 }
