@@ -12,6 +12,7 @@ uniform float u_spin;
 uniform float u_spinPhase;   // integral: rate, not rescaled history
 uniform float u_stripes;     // stripe average colouring: detail in the smooth exterior
 uniform float u_relief;      // fake-3D relief lit by the complex derivative
+uniform float u_trapshape;   // orbit-trap shape: line / cross / circle / diamond
 
 // Deep zoom into 2D escape-time fractals. Colour comes from the smooth iteration
 // count and a two-channel orbit trap; brightness comes from the exterior distance
@@ -169,7 +170,15 @@ void main() {
 
     m = dot(z, z);
     trapR = min(trapR, m);
-    trapL = min(trapL, abs(z.x));
+    // Orbit-trap shape: the second trap that paints the neon filaments. Different
+    // shapes catch the orbit in a line, cross, circle or diamond -> different colour
+    // textures over the same fractal. Shape 0 is the original vertical line.
+    float td;
+    if (u_trapshape < 0.5) td = abs(z.x);
+    else if (u_trapshape < 1.5) td = min(abs(z.x), abs(z.y));
+    else if (u_trapshape < 2.5) td = abs(length(z) - 1.0);
+    else td = abs(abs(z.x) - abs(z.y)) * 0.70711;
+    trapL = min(trapL, td);
     acc += 1.0 / (1.0 + 22.0 * m);
 
     if (m > BAIL) {

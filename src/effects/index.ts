@@ -16,6 +16,7 @@ import fractalcoreFrag from './scenes/fractalcore.frag?raw';
 import nebulaFrag from './scenes/nebula.frag?raw';
 import mandelzoomFrag from './scenes/mandelzoom.frag?raw';
 import mandelbulbFrag from './scenes/mandelbulb.frag?raw';
+import newtonFrag from './scenes/newton.frag?raw';
 import juliamorphFrag from './scenes/juliamorph.frag?raw';
 import infinityboxFrag from './scenes/infinitybox.frag?raw';
 import apollonianFrag from './scenes/apollonian.frag?raw';
@@ -475,6 +476,19 @@ export const EFFECTS: EffectDef[] = [
       { type: 'slider', id: 'juliamix', label: 'Julia Blend', min: 0, max: 1, step: 0.01, default: 0, surprise: [0, 1] },
       { type: 'slider', id: 'iters', label: 'Detail', min: 64, max: 400, step: 1, default: 180, surprise: [120, 320], perfScale: true },
       { type: 'slider', id: 'trapmix', label: 'Colour Style', min: 0, max: 1, step: 0.01, default: 0.35, surprise: [0, 1] },
+      {
+        type: 'select',
+        id: 'trapshape',
+        label: 'Trap Shape',
+        options: [
+          { value: 0, label: 'Line' },
+          { value: 1, label: 'Cross' },
+          { value: 2, label: 'Circle' },
+          { value: 3, label: 'Diamond' },
+        ],
+        default: 0,
+        surprise: true,
+      },
       { type: 'slider', id: 'stripes', label: 'Stripe Detail', min: 0, max: 1, step: 0.01, default: 0.35, surprise: [0, 0.8] },
       { type: 'slider', id: 'relief', label: 'Relief 3D', min: 0, max: 1, step: 0.01, default: 0.4, surprise: [0, 0.8] },
       { type: 'slider', id: 'spin', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0, surprise: [-0.5, 0.5], integrate: true },
@@ -561,6 +575,25 @@ export const EFFECTS: EffectDef[] = [
       { type: 'slider', id: 'fbright', label: 'Exposure', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.3, 0.8] },
       { type: 'slider', id: 'ftrail', label: 'Smoothness', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.3, 0.8] },
       { type: 'slider', id: 'fdensity', label: 'Detail', min: 0.2, max: 1.5, step: 0.01, default: 1, surprise: [0.6, 1.3], perfScale: true },
+    ],
+  },
+  {
+    id: 'newton',
+    name: 'Newton Bloom',
+    kind: 'scene',
+    icon: '🌀',
+    frag: newtonFrag,
+    cost: 2,
+    audioReact: [{ id: 'nglow', band: 'bass', amount: 0.3 }, { id: 'naspin', band: 'beat', amount: 0.15 }],
+    params: [
+      { type: 'slider', id: 'nk', label: 'Petals', min: 2, max: 8, step: 1, default: 5, surprise: [3, 7] },
+      { type: 'slider', id: 'nrelax', label: 'Flow', min: 0.5, max: 2, step: 0.01, default: 1, surprise: [0.7, 1.6] },
+      { type: 'slider', id: 'naspin', label: 'Swirl Speed', min: 0, max: 1.5, step: 0.01, default: 0.3, surprise: [0.1, 1], integrate: true },
+      { type: 'slider', id: 'nnova', label: 'Nova', min: 0, max: 1, step: 0.01, default: 0, surprise: [0, 0.8] },
+      { type: 'slider', id: 'nzoom', label: 'Zoom', min: 0.2, max: 3, step: 0.01, default: 1, curve: 'exp', surprise: [0.6, 1.8] },
+      { type: 'slider', id: 'nspin', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0.1, surprise: [-0.6, 0.6], integrate: true },
+      { type: 'slider', id: 'nglow', label: 'Edge Glow', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.9] },
+      { type: 'slider', id: 'niters', label: 'Detail', min: 8, max: 80, step: 1, default: 30, surprise: [18, 55], perfScale: true },
     ],
   },
   {
