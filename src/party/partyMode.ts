@@ -88,7 +88,9 @@ class PartyMode {
         return;
       }
       const usePreset = Math.random() < 0.5;
-      if (usePreset) store.applySnapshot(hydrate(pick(BUILTIN_PRESETS).state));
+      // applyLook, not applySnapshot: a preset must not reset the phone's resolution
+      // to 100% every ~90 s and stutter the party. (makeSurprise already keeps perf.)
+      if (usePreset) store.applyLook(hydrate(pick(BUILTIN_PRESETS).state));
       else store.applySnapshot(makeSurprise());
       dip?.classList.remove('on');
       this.scheduleNext();

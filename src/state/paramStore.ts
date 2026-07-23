@@ -77,6 +77,21 @@ class ParamStore {
     for (const set of this.keyListeners.values()) for (const fn of set) fn();
   }
 
+  /**
+   * Apply someone else's LOOK — a built-in preset or an imported share code — while
+   * keeping the viewer's own performance settings. Those three keys are local-only
+   * (never travel in a share code, never set by a preset), so a plain applySnapshot
+   * would reset them to 100% / 100% / auto-off and slam a weak phone to full
+   * resolution mid-party. Surprise Me already preserves them; this does the same for
+   * presets and imports.
+   */
+  applyLook(s: ParamState): void {
+    for (const key of ['global.quality', 'global.detail', 'global.autoquality'] as const) {
+      if (this.state.params[key] !== undefined) s.params[key] = this.state.params[key];
+    }
+    this.applySnapshot(s);
+  }
+
   private notifyStructure(): void {
     for (const fn of this.structureListeners) fn();
   }

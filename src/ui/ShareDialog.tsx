@@ -42,7 +42,7 @@ export function ShareDialog() {
     if (!cleaned) return;
     const st = await decodeCode(cleaned);
     if (st) {
-      store.applySnapshot(st);
+      store.applyLook(st);
       showToast('Loaded! Enjoy the look.');
       setOpen(false);
     } else {

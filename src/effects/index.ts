@@ -85,6 +85,16 @@ export const GLOBAL_PARAMS: ParamDef[] = [
     default: 1,
     surprise: [0.7, 1.5],
   },
+  {
+    type: 'slider',
+    id: 'hue',
+    label: 'Hue',
+    min: -3.14159,
+    max: 3.14159,
+    step: 0.01,
+    default: 0,
+    surprise: [-1.5, 1.5],
+  },
   // Performance knobs. These are yours to set — nothing overrides them unless you
   // switch the auto-adjust below back on. 100% resolution means one rendered pixel
   // per screen pixel; above that is supersampling, which looks sharper still.
@@ -662,13 +672,15 @@ export const EFFECTS: EffectDef[] = [
     params: [
       { type: 'slider', id: 'ksegments', label: 'Segments', min: 2, max: 16, step: 1, default: 6, surprise: [3, 12] },
       { type: 'slider', id: 'kangle', label: 'Angle', min: 0, max: 1, step: 0.01, default: 0 },
+      { type: 'slider', id: 'kspin', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0.15, surprise: [-0.7, 0.7], integrate: true },
       {
         type: 'select',
         id: 'kmode',
         label: 'Mode',
         options: [
           { value: 0, label: 'Polar' },
-          { value: 1, label: 'Quad' },
+          { value: 1, label: 'Mirror' },
+          { value: 2, label: 'Quad' },
         ],
         default: 0,
         surprise: true,
@@ -794,6 +806,7 @@ const RESERVED_UNIFORMS = new Set([
   'audioAmt',
   'audioFx',
   'audioFx2',
+  'hue',
   'palShift',
   'palSpread',
   'lodScale',

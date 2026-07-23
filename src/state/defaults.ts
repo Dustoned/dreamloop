@@ -59,6 +59,7 @@ const MAPPINGS: AudioMapping[] = [
   'trebleSparkle',
   'midSway',
   'beatColour',
+  'beatPunch',
 ];
 const BANDS: AudioBand[] = ['bass', 'mid', 'treble', 'beat'];
 

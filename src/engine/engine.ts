@@ -242,7 +242,7 @@ export class Engine {
       fx2: [
         m.includes('midSway') ? amt * a.mid : 0,
         m.includes('beatColour') ? amt * a.beat : 0,
-        0,
+        m.includes('beatPunch') ? amt * a.beat : 0,
       ],
     };
   }
@@ -497,6 +497,7 @@ export class Engine {
       num(st.params['global.contrast'], 1),
       num(st.params['global.saturation'], 1),
     );
+    this.finalProg.set1f('u_hue', num(st.params['global.hue'], 0));
     this.finalProg.bindTex('u_src', current.tex, 1);
     glc.drawFullscreen();
   }

@@ -24,7 +24,7 @@ export function PresetRow() {
   const [userList, setUserList] = useState(listUserPresets);
   bumpUserPresets = () => setUserList(listUserPresets());
 
-  const apply = (state: unknown) => store.applySnapshot(hydrate(state));
+  const apply = (state: unknown) => store.applyLook(hydrate(state));
 
   return (
     <div class="preset-row">

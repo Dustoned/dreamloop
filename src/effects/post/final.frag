@@ -7,12 +7,22 @@ uniform float u_enabled;
 uniform vec3 u_audioFx;
 // global image grade: brightness, contrast, saturation
 uniform vec3 u_grade;
+// global static hue rotation, radians
+uniform float u_hue;
+
+// Rodrigues rotation of a colour about the grey axis — a clean hue turn that
+// leaves brightness alone.
+vec3 rotateHue(vec3 c, float a) {
+  vec3 k = vec3(0.57735);
+  return c * cos(a) + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - cos(a));
+}
 
 void main() {
   vec2 uv = v_uv;
   // Bass pulse: a gentle push toward the centre on the sub-bass. Halved from the
-  // old 0.06 — the accent should breathe, not lunge.
-  uv = 0.5 + (uv - 0.5) * (1.0 - u_audioFx.x * 0.03);
+  // old 0.06 — the accent should breathe, not lunge. Beat Zoom Punch (u_audioFx2.z)
+  // adds a sharper outward kick on the beat, for the dancefloor pump.
+  uv = 0.5 + (uv - 0.5) * (1.0 - u_audioFx.x * 0.03 + u_audioFx2.z * 0.10);
 
   // Mid sway: a slow whole-frame roll on the mids. Tiny angle; it reads as the
   // image leaning with the music rather than spinning.
@@ -31,13 +41,9 @@ void main() {
   c = (c - 0.5) * u_grade.y + 0.5;
   c = mix(vec3(luma(c)), c, u_grade.z);
 
-  // Beat colour kick: rotate the hue on each beat (Rodrigues rotation about the
-  // grey axis), so the palette twitches with the drum instead of the brightness.
-  float a = u_audioFx2.y * 0.5;
-  if (a > 0.001) {
-    vec3 k = vec3(0.57735);
-    c = c * cos(a) + cross(k, c) * sin(a) + k * dot(k, c) * (1.0 - cos(a));
-  }
+  // Static global hue offset plus the beat colour kick, in one rotation.
+  float a = u_hue + u_audioFx2.y * 0.5;
+  if (abs(a) > 0.001) c = rotateHue(c, a);
 
   // Vignette.
   float d = distance(uv, vec2(0.5)) * 1.41421356;

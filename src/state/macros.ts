@@ -58,6 +58,11 @@ const SCENE_COMPLEXITY: Record<string, Target[]> = {
   mandelbulb: [{ path: 'scene.mandelbulb.biters', map: (m) => Math.round(lerp(4, 12, m)) }],
   infinitybox: [{ path: 'scene.infinitybox.miters', map: (m) => Math.round(lerp(3, 10, m)) }],
   apollonian: [{ path: 'scene.apollonian.aiters', map: (m) => Math.round(lerp(4, 12, m)) }],
+  // The three music visualisers were missing from every macro map, so Complexity,
+  // Zoom and Warp did nothing on the app's most reactive scenes.
+  ribbons: [{ path: 'scene.ribbons.rbands', map: (m) => Math.round(lerp(2, 9, m)) }],
+  bloomring: [{ path: 'scene.bloomring.bsegments', map: (m) => Math.round(lerp(3, 18, m)) }],
+  pulsewave: [{ path: 'scene.pulsewave.pcount', map: (m) => Math.round(lerp(2, 10, m)) }],
 };
 
 /** Zoom / depth per scene — the "get closer" control. */
@@ -79,7 +84,10 @@ const SCENE_ZOOM: Record<string, Target[]> = {
   juliamorph: [{ path: 'scene.juliamorph.basezoom', map: (m) => lerp(-2, 8, m) }],
   mandelbulb: [{ path: 'scene.mandelbulb.bdist', map: (m) => lerp(3.8, 1.45, m) }],
   infinitybox: [{ path: 'scene.infinitybox.moffset', map: (m) => lerp(0.65, 1.55, m) }],
-  apollonian: [{ path: 'scene.apollonian.ascale', map: (m) => lerp(1.15, 2.15, m) }],
+  apollonian: [{ path: 'scene.apollonian.ascale', map: (m) => lerp(1.15, 1.9, m) }],
+  ribbons: [{ path: 'scene.ribbons.rwidth', map: (m) => lerp(0.4, 2.4, m) }],
+  bloomring: [{ path: 'scene.bloomring.bpetal', map: (m) => lerp(0.2, 1.9, m) }],
+  pulsewave: [{ path: 'scene.pulsewave.pthick', map: (m) => lerp(0.4, 2.8, m) }],
 };
 
 /** Warp / twist — the "bend reality" control. */
@@ -102,6 +110,9 @@ const SCENE_WARP: Record<string, Target[]> = {
   mandelbulb: [{ path: 'scene.mandelbulb.bmorph', map: (m) => m }],
   infinitybox: [{ path: 'scene.infinitybox.mtwist', map: (m) => lerp(-1, 1, m) }],
   apollonian: [{ path: 'scene.apollonian.aspin', map: (m) => lerp(-1, 1, m) }],
+  ribbons: [{ path: 'scene.ribbons.rswing', map: (m) => lerp(0.2, 2.5, m) }],
+  bloomring: [{ path: 'scene.bloomring.bspin2', map: (m) => lerp(-1, 1, m) }],
+  pulsewave: [{ path: 'scene.pulsewave.pwarp', map: (m) => lerp(0, 2, m) }],
 };
 
 const INTENSITY: Target[] = [

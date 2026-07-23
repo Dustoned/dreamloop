@@ -7,7 +7,7 @@ import { AutoControl } from '../controls/AutoControl';
 import { useStructure } from '../hooks/useParam';
 import { resetEffect, resetGlobals } from '../../state/reset';
 
-const IMAGE_PARAMS = ['brightness', 'contrast', 'saturation', 'colorspeed', 'colorspread'];
+const IMAGE_PARAMS = ['brightness', 'contrast', 'saturation', 'hue', 'colorspeed', 'colorspread'];
 
 export function FeelTab() {
   useStructure();

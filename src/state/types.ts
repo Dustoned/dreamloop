@@ -94,7 +94,8 @@ export type AudioMapping =
   | 'beatFlash'
   | 'trebleSparkle'
   | 'midSway'
-  | 'beatColour';
+  | 'beatColour'
+  | 'beatPunch';
 
 export type AudioBand = 'bass' | 'mid' | 'treble' | 'beat';
 
