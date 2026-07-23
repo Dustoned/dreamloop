@@ -48,6 +48,26 @@ vec2 diveCenter(float which) {
   return vec2(-1.7687739, 0.0017890);                // Mini-brot
 }
 
+/**
+ * Endless wandering around whichever dive target the user picked. The famous
+ * targets all sit in uniformly dense boundary territory — seahorse tails, elephant
+ * trunks, spiral arms — so a slow drift AROUND one, at a held magnification, always
+ * shows rich filigree and never runs out of new scenery. The drift is a sum of two
+ * incommensurate noise loops, so it never exactly repeats, and it stays within a
+ * small radius of the target, so it never wanders out into the smooth flats and
+ * never leaves the fp32-safe coordinate range.
+ *
+ * `rad` is the wander radius in world units; keep it comparable to the view size
+ * so you explore the neighbourhood without straying off the interesting patch.
+ */
+vec2 journeyCentre(vec2 target, float t, float rad) {
+  vec2 w = vec2(
+    vnoise(vec2(t * 0.11, 1.7)) - 0.5 + 0.5 * (vnoise(vec2(t * 0.037, 9.3)) - 0.5),
+    vnoise(vec2(t * 0.11, 8.2)) - 0.5 + 0.5 * (vnoise(vec2(t * 0.037, 4.1)) - 0.5)
+  );
+  return target + w * rad;
+}
+
 void main() {
   // ---- zoom schedule: 0 In, 1 Out, 2 Ping-Pong, 3 Hold ---------------------
   // The dive covers a fixed span and then loops. Running the depth off a bare
@@ -59,6 +79,7 @@ void main() {
   float span = clamp(CRISP - base, 0.0, 13.0);
   float phase = u_zspeedPhase * 0.25 / max(span, 0.001);
   float depth = base;
+  bool journey = u_zmode >= 3.5;
   if (u_zmode < 0.5) depth += span * diveCycle(phase);
   else if (u_zmode < 1.5) depth += span * (1.0 - diveCycle(phase));
   // Ping-Pong used a fixed frequency, so over a 13-octave span it travelled about
@@ -66,12 +87,23 @@ void main() {
   // the span makes one slider mean one speed in every mode.
   else if (u_zmode < 2.5)
     depth += (span * 0.5) * (1.0 - cos(u_zspeedPhase * 0.25 * PI / max(span, 0.001)));
+  // Journey (mode 4): hold the zoom and travel the boundary instead. This is the
+  // only genuinely endless option for the Mandelbrot — you cannot dive forever
+  // (fp32 dissolves near 19 octaves) but you CAN crawl the infinitely-detailed
+  // edge forever at a fixed, safe magnification. Start Depth lets you set how
+  // close in the journey runs, on top of a tight default.
+  else depth += 4.6;
   depth = clamp(depth, 0.0, ZLIMIT);
   float scale = exp2(-depth);
 
   // ---- plane ---------------------------------------------------------------
   vec2 sp = rot2(u_spinPhase * 0.06) * (ctr(v_uv) * VIEW);
-  vec2 pix = diveCenter(u_dive) + sp * scale;
+  // In Journey the wander radius tracks the view size (VIEW*scale), scaled up a bit
+  // so the neighbourhood is explored without straying onto the smooth flats.
+  vec2 centre = journey
+    ? journeyCentre(diveCenter(u_dive), u_zspeedPhase * 0.9, VIEW * scale * 2.5)
+    : diveCenter(u_dive);
+  vec2 pix = centre + sp * scale;
   float px = VIEW * scale / u_res.y; // world units per screen pixel
 
   // Julia constant walks a Lissajous loop hugging the cardioid: shapes keep morphing.
