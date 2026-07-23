@@ -13,6 +13,9 @@ uniform float u_spinPhase;   // integral: rate, not rescaled history
 uniform float u_stripes;     // stripe average colouring: detail in the smooth exterior
 uniform float u_relief;      // fake-3D relief lit by the complex derivative
 uniform float u_trapshape;   // orbit-trap shape: line / cross / circle / diamond
+uniform float u_engine;      // 0 Classic (fp32 loop), 1 Infinite (perturbation)
+uniform sampler2D u_ref;     // high-precision reference orbit (Zx, Zy per iteration)
+uniform float u_refLen;      // number of valid reference samples
 
 // Deep zoom into 2D escape-time fractals. Colour comes from the smooth iteration
 // count and a two-channel orbit trap; brightness comes from the exterior distance
@@ -23,6 +26,7 @@ uniform float u_trapshape;   // orbit-trap shape: line / cross / circle / diamon
 #define CRISP 15.0     // past here fp32 detail dissolves; keep every dive below it
 #define VIEW 2.6       // world units across the short screen axis at depth 0
 #define BAIL 1024.0    // |z|^2 escape radius, wide enough for a clean smooth count
+#define PMAX 46.0      // perturbation depth ceiling (fp64 centre precision limit)
 
 vec2 cmul(vec2 a, vec2 b) {
   return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
@@ -44,11 +48,13 @@ vec2 cpow(vec2 z, float p) {
 }
 
 /** Famous dive targets. */
+// These MUST match Engine.REF_CENTERS exactly, so the Classic (fp32) path and the
+// Infinite (perturbation) path centre on the identical point and hand off seamlessly.
 vec2 diveCenter(float which) {
-  if (which < 0.5) return vec2(-0.7453, 0.1127);     // Seahorse Valley
-  if (which < 1.5) return vec2(0.2925, 0.0149);      // Elephant Valley
-  if (which < 2.5) return vec2(-0.088, 0.654);       // Triple Spiral
-  return vec2(-1.7687739, 0.0017890);                // Mini-brot
+  if (which < 0.5) return vec2(-0.7436438870371587, 0.13182590420531197); // Seahorse Valley
+  if (which < 1.5) return vec2(0.2925755, 0.0149977);                     // Elephant Valley
+  if (which < 2.5) return vec2(-0.088, 0.654);                            // Triple Spiral
+  return vec2(-1.7687739, 0.001789);                                      // Mini-brot
 }
 
 /**
@@ -79,64 +85,97 @@ void main() {
   // moves inward: no rewind. The rate used to be u_zspeedPhase * 0.25 / span, which
   // at max Zoom Speed crawled at about a third of an octave per second; now max is a
   // brisk ~2.5 octaves per second.
-  float base = clamp(u_basezoom, 0.0, CRISP - 1.0);   // start in the crisp zone
-  float top = ZLIMIT - 0.8;                            // wrap deep in the mush (~18.2)
-  float travel = u_zspeedPhase * 1.25;                 // octaves travelled so far
-  bool journey = u_zmode >= 3.5;
+  // Engine 0 = Classic: the fp32 looping dive (wraps in the mush around 19 octaves).
+  // Engine 1 = Infinite: perturbation. On Zoom In the depth climbs FOREVER and never
+  // rewinds — it keeps resolving crisp detail because each pixel iterates only a tiny
+  // deviation from one high-precision reference orbit instead of its own coordinate.
+  bool inf = u_engine > 0.5;
+  bool infDive = inf && u_zmode < 0.5;
+
+  float base = clamp(u_basezoom, 0.0, CRISP - 1.0);
   float depth;
-  if (u_zmode < 1.5) depth = diveInfinite(travel, base, top, u_zmode);   // In / Out
-  else if (u_zmode < 2.5)
-    depth = base + (top - base) * (0.5 - 0.5 * cos(travel * PI / (top - base))); // Ping-Pong
-  // Journey (mode 4): hold the zoom and travel the boundary instead — a fixed, safe
-  // magnification, crawling the infinitely-detailed edge. Start Depth sets how close.
-  else if (journey) depth = base + 4.6;
-  else depth = base;                                                     // Hold
-  depth = clamp(depth, 0.0, ZLIMIT);
+  if (infDive) {
+    depth = min(base + u_zspeedPhase * 1.25, PMAX);   // dive and hold; no rewind, ever
+  } else {
+    float top = ZLIMIT - 0.8;
+    float travel = u_zspeedPhase * 1.25;
+    if (u_zmode < 1.5) depth = diveInfinite(travel, base, top, u_zmode);
+    else if (u_zmode < 2.5)
+      depth = base + (top - base) * (0.5 - 0.5 * cos(travel * PI / (top - base)));
+    else if (u_zmode >= 3.5) depth = base + 4.6;   // Journey
+    else depth = base;                             // Hold
+    depth = clamp(depth, 0.0, ZLIMIT);
+  }
   float scale = exp2(-depth);
+  bool journey = (!inf) && (u_zmode >= 3.5);
 
   // ---- plane ---------------------------------------------------------------
   vec2 sp = rot2(u_spinPhase * 0.06) * (ctr(v_uv) * VIEW);
-  // In Journey the wander radius tracks the view size (VIEW*scale), scaled up a bit
-  // so the neighbourhood is explored without straying onto the smooth flats.
   vec2 centre = journey
     ? journeyCentre(diveCenter(u_dive), u_zspeedPhase * 3.0, VIEW * scale * 3.6)
     : diveCenter(u_dive);
   vec2 pix = centre + sp * scale;
   float px = VIEW * scale / u_res.y; // world units per screen pixel
 
-  // Julia constant walks a Lissajous loop hugging the cardioid: shapes keep morphing.
+  // Perturbation only becomes accurate once the per-pixel offset from the centre is
+  // tiny; above ~depth 9 it is, and below it plain fp32 is crisp anyway, so the two
+  // paths meet seamlessly at 9 (identical Mandelbrot there).
+  bool usePerturb = infDive && depth > 9.0;
+
+  float trapR = 1e9, trapL = 1e9, acc = 0.0, m = 0.0, esc = -1.0;
+  vec2 z = vec2(0.0), dz = vec2(0.0);
+  float stSum = 0.0, stCount = 0.0, stLast = 0.0;
+  bool doStripe = u_stripes > 0.001;
+  float lpw = 1.0;       // log2(power); Mandelbrot = 1
+  float maxIter;
+
+  if (usePerturb) {
+    // ---- perturbation iteration (Mandelbrot z^2 + c) ----------------------
+    // δ_{n+1} = 2·Z_n·δ_n + δ_n² + δc, with Z_n the high-precision reference and δc
+    // the pixel's tiny offset. The actual orbit is z_n = Z_n + δ_n; escape, traps and
+    // the derivative all read that, so the colouring below is identical to Classic.
+    vec2 dc0 = sp * scale;         // δc
+    vec2 dlt = vec2(0.0);          // δ_0
+    maxIter = min(u_refLen - 1.0, u_iters * 10.0);
+    int budget = int(maxIter);
+    for (int i = 0; i < 4096; i++) {
+      if (i >= budget) break;
+      vec2 Zi = texelFetch(u_ref, ivec2(i, 0), 0).xy;
+      vec2 zi = Zi + dlt;                                 // z_i
+      dz = 2.0 * cmul(zi, dz) + vec2(1.0, 0.0);           // z'_{i+1}
+      dlt = 2.0 * cmul(Zi, dlt) + cmul(dlt, dlt) + dc0;   // δ_{i+1}
+      z = texelFetch(u_ref, ivec2(i + 1, 0), 0).xy + dlt; // z_{i+1}
+      if (doStripe) { stLast = 0.5 + 0.5 * sin(6.0 * atan(z.y, z.x)); stSum += stLast; stCount += 1.0; }
+      m = dot(z, z);
+      trapR = min(trapR, m);
+      float td;
+      if (u_trapshape < 0.5) td = abs(z.x);
+      else if (u_trapshape < 1.5) td = min(abs(z.x), abs(z.y));
+      else if (u_trapshape < 2.5) td = abs(length(z) - 1.0);
+      else td = abs(abs(z.x) - abs(z.y)) * 0.70711;
+      trapL = min(trapL, td);
+      acc += 1.0 / (1.0 + 22.0 * m);
+      if (m > BAIL) { esc = float(i); break; }
+    }
+  } else {
+  // ---- classic iteration (all formulas, fp32) -----------------------------
   float ja = u_time * 0.06;
   vec2 jc = 0.7885 * vec2(cos(ja), sin(ja)) + 0.055 * vec2(sin(ja * 2.3), cos(ja * 1.7));
   float jm = clamp(u_juliamix, 0.0, 1.0);
-
   vec2 c = mix(pix, jc, jm);
-  vec2 z = pix * jm;
-  vec2 dz = vec2(jm, 0.0);   // d(z0)/d(pixel)
-  float dc = 1.0 - jm;       // d(c)/d(pixel)
-
-  // ---- formula select (uniform, so the branches below stay warp-coherent) ---
+  z = pix * jm;
+  dz = vec2(jm, 0.0);
+  float dc = 1.0 - jm;
   float fShip = (u_formula >= 0.5 && u_formula < 1.5) ? 1.0 : 0.0;
   float fTri = (u_formula >= 1.5 && u_formula < 2.5) ? 1.0 : 0.0;
   float fCeltic = (u_formula >= 2.5 && u_formula < 3.5) ? 1.0 : 0.0;
   float fPhoenix = (u_formula >= 3.5) ? 1.0 : 0.0;
-
   float pw = clamp(u_power, 2.0, 8.0);
-  float lpw = max(log2(pw), 0.5);
+  lpw = max(log2(pw), 0.5);
   bool sq = abs(pw - 2.0) < 1e-3; // classic squaring: skip the transcendentals
-
   int n = int(clamp(u_iters, 16.0, 400.0));
+  maxIter = float(n);
   vec2 zPrev = vec2(0.0);
-  float trapR = 1e9;   // min |z|^2 over the orbit
-  float trapL = 1e9;   // min |z.x|  -> distance to the line x = 0
-  float acc = 0.0;     // energy: how long the orbit lingers near the origin
-  float m = 0.0;
-  float esc = -1.0;
-  // Stripe Average Colouring (Jussi Härkönen): average sin(k*arg(z)) along the orbit.
-  // It paints flame-like ripples across the wide smooth bands that plain escape-count
-  // colouring leaves flat. stLast/stCount keep the last term so we can blend the final
-  // partial average by the smooth-escape fraction and avoid banding at iteration steps.
-  float stSum = 0.0, stCount = 0.0, stLast = 0.0;
-  bool doStripe = u_stripes > 0.001;
 
   for (int i = 0; i < 400; i++) {
     if (i >= n) break;
@@ -186,11 +225,12 @@ void main() {
       break;
     }
   }
+  } // end classic path
 
   bool escaped = esc >= 0.0;
 
   // ---- smooth iteration count + exterior distance estimate ------------------
-  float sn = float(n);
+  float sn = maxIter;
   float deN = 1e6; // distance to the set, in pixels
   if (escaped) {
     float lz = 0.5 * log2(max(m, 1.0001));
@@ -253,7 +293,8 @@ void main() {
   col += pal(0.12 + t * 0.2 + u_time * 0.02) * glow * 0.16 * aud;
 
   // ---- fp32 breakup: melt into a low-frequency version instead of hash noise -
-  float mush = smoothstep(CRISP, ZLIMIT, depth);
+  // Perturbation stays crisp arbitrarily deep, so it never melts into the mush wash.
+  float mush = usePerturb ? 0.0 : smoothstep(CRISP, ZLIMIT, depth);
   vec3 low = pal(t * 0.3 + 0.12 + u_time * 0.02)
            * (0.05 + 0.62 * sqrt(clamp(luma(col) * 1.5, 0.0, 1.0)));
   col = mix(col, low, mush * 0.85);

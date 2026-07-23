@@ -46,6 +46,10 @@ export class Engine {
   private flameAccum: PingPong | null = null;
   private flameProg: Program | null = null;
   private flameFadeProg: Program | null = null;
+  /** Perturbation reference orbit (Deep Zoom ∞), computed in fp64 and uploaded as RG32F. */
+  private refTex: WebGLTexture | null = null;
+  private refKey = '';
+  private refLen = 0;
   /** Real elapsed seconds this frame (unscaled), for frame-rate-independent decay. */
   private lastDt = 1 / 60;
   private readonly palette: PaletteTexture;
@@ -349,6 +353,12 @@ export class Engine {
       this.uploadParams(sp, sceneDef, st, `scene.${sceneDef.id}.`);
       sp.bindTex('u_palette', this.palette.tex, 0);
       if (this.sim && sceneDef.passes === 'sim') sp.bindTex('u_prev', this.sim.read.tex, 2);
+      if (sceneDef.id === 'mandelzoom') {
+        // Perturbation reference orbit for Deep Zoom ∞ (harmless when Classic engine).
+        this.ensureReference(st);
+        sp.bindTex('u_ref', this.refTex, 3);
+        sp.set1f('u_refLen', this.refLen);
+      }
       glc.drawFullscreen();
     }
 
@@ -408,6 +418,57 @@ export class Engine {
 
     this.renderFinal(st, current, cw, ch);
     this.frameIdx++;
+  }
+
+  /** Dive-target centres at full fp64 precision, indexed by the Deep Zoom "dive" param. */
+  private static readonly REF_CENTERS: [number, number][] = [
+    [-0.7436438870371587, 0.13182590420531197], // Seahorse Valley
+    [0.2925755, 0.0149977], // Elephant Valley
+    [-0.088, 0.654], // Triple Spiral
+    [-1.7687739, 0.001789], // Mini-brot
+  ];
+
+  /**
+   * Perturbation reference orbit for the Deep Zoom centre. Computed once in fp64 per
+   * centre and uploaded as an RG32F texture the shader samples by iteration index.
+   * This is what lets Deep Zoom ∞ keep resolving crisp detail far past the fp32 wall:
+   * every pixel iterates only a tiny deviation from this one high-precision orbit,
+   * so no per-pixel high precision (and no melting into mush) is needed.
+   */
+  private ensureReference(st: ParamState): void {
+    const gl = this.glc.gl;
+    const dive = Math.round(num(st.params['scene.mandelzoom.dive'], 0));
+    const [cx, cy] = Engine.REF_CENTERS[Math.max(0, Math.min(3, dive))];
+    const MAXREF = 4096;
+    const key = `${cx},${cy}`;
+    if (key === this.refKey && this.refTex) return;
+    this.refKey = key;
+
+    const data = new Float32Array(MAXREF * 2);
+    let zx = 0,
+      zy = 0,
+      n = 0;
+    for (; n < MAXREF; n++) {
+      data[n * 2] = zx;
+      data[n * 2 + 1] = zy;
+      const nx = zx * zx - zy * zy + cx;
+      const ny = 2 * zx * zy + cy;
+      zx = nx;
+      zy = ny;
+      if (zx * zx + zy * zy > 1e6) {
+        n++;
+        break;
+      } // reference escaped (won't happen for an in-set centre)
+    }
+    this.refLen = n;
+
+    if (!this.refTex) this.refTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, this.refTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, MAXREF, 1, 0, gl.RG, gl.FLOAT, data);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   }
 
   /**

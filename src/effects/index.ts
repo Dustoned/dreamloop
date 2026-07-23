@@ -458,6 +458,17 @@ export const EFFECTS: EffectDef[] = [
       },
       {
         type: 'select',
+        id: 'engine',
+        label: 'Zoom Engine',
+        options: [
+          { value: 1, label: 'Infinite (crisp)' },
+          { value: 0, label: 'Classic (looping)' },
+        ],
+        default: 1,
+        surprise: false,
+      },
+      {
+        type: 'select',
         id: 'zmode',
         label: 'Motion',
         options: [
