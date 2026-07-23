@@ -55,11 +55,19 @@ float de(vec3 p, mat2 rstep, float s0, out float trap, out float lvl) {
 
     float c;
     if (u_mvariant < 0.5) {
-      c = crossDE(r) / s;                                   // Menger sponge
+      c = crossDE(r) / s;                                     // Sponge
     } else if (u_mvariant < 1.5) {
-      c = (min(max(abs(r.x), abs(r.y)), abs(r.z)) - 1.0) / s; // cross lattice
+      c = (min(max(abs(r.x), abs(r.y)), abs(r.z)) - 1.0) / s; // Lattice (square shafts)
+    } else if (u_mvariant < 2.5) {
+      c = (boxDE(r, vec3(1.0)) - 0.35) / s;                   // Blocks (jerusalem cube)
+    } else if (u_mvariant < 3.5) {
+      // Girders: the cross with rounded, chamfered bars — a beefier lattice. Built
+      // from the same cross void, so the central shaft stays open at every scale.
+      c = (crossDE(r) - 0.28) / s;
     } else {
-      c = (boxDE(r, vec3(1.0, 1.0, 1.0)) - 0.35) / s;        // jerusalem-ish cube
+      // Weave: two crosses at right angles min'd together, an interlaced basket.
+      // Both are cross voids, so their intersection keeps the axis clear too.
+      c = min(crossDE(r), crossDE(r.yzx)) / s;
     }
 
     if (c > d) {

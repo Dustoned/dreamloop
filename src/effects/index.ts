@@ -550,6 +550,8 @@ export const EFFECTS: EffectDef[] = [
           { value: 0, label: 'Sponge' },
           { value: 1, label: 'Lattice' },
           { value: 2, label: 'Blocks' },
+          { value: 3, label: 'Girders' },
+          { value: 4, label: 'Weave' },
         ],
         default: 0,
         surprise: true,
