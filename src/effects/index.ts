@@ -22,6 +22,10 @@ import apollonianFrag from './scenes/apollonian.frag?raw';
 import ribbonsFrag from './scenes/ribbons.frag?raw';
 import bloomringFrag from './scenes/bloomring.frag?raw';
 import pulsewaveFrag from './scenes/pulsewave.frag?raw';
+import flameSplatVert from './scenes/flame_splat.vert?raw';
+import flameSplatFrag from './scenes/flame_splat.frag?raw';
+import flameFadeFrag from './scenes/flame_fade.frag?raw';
+import flameTonemapFrag from './scenes/flame_tonemap.frag?raw';
 import echoFrag from './post/echo.frag?raw';
 import huecycleFrag from './post/huecycle.frag?raw';
 import finalFrag from './post/final.frag?raw';
@@ -38,6 +42,9 @@ export const FINAL_FRAG = finalFrag;
 export const BLOOM_BRIGHT_FRAG = bloomBrightFrag;
 export const BLOOM_BLUR_FRAG = bloomBlurFrag;
 export const TISSUE_SIM_FRAG = tissueSimFrag;
+export const FLAME_SPLAT_VERT = flameSplatVert;
+export const FLAME_SPLAT_FRAG = flameSplatFrag;
+export const FLAME_FADE_FRAG = flameFadeFrag;
 
 /** Global (non-effect) params, shown at the top of the panel. Paths: "global.<id>". */
 export const GLOBAL_PARAMS: ParamDef[] = [
@@ -517,6 +524,43 @@ export const EFFECTS: EffectDef[] = [
       { type: 'slider', id: 'stripes', label: 'Stripe Detail', min: 0, max: 1, step: 0.01, default: 0.3, surprise: [0, 0.8] },
       { type: 'slider', id: 'relief', label: 'Relief 3D', min: 0, max: 1, step: 0.01, default: 0.4, surprise: [0, 0.8] },
       { type: 'slider', id: 'jspin', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0, surprise: [-0.5, 0.5], integrate: true },
+    ],
+  },
+  {
+    id: 'flame',
+    name: 'Fractal Flame',
+    kind: 'scene',
+    icon: '🔥',
+    frag: flameTonemapFrag,
+    cost: 3,
+    passes: 'flame',
+    audioReact: [{ id: 'fmorph', band: 'beat', amount: 0.2 }, { id: 'fbright', band: 'bass', amount: 0.18 }],
+    params: [
+      {
+        type: 'select',
+        id: 'fvar',
+        label: 'Creature',
+        options: [
+          { value: 0, label: 'Sinusoidal' },
+          { value: 1, label: 'Spherical' },
+          { value: 2, label: 'Swirl' },
+          { value: 3, label: 'Horseshoe' },
+          { value: 4, label: 'Polar' },
+          { value: 5, label: 'Handkerchief' },
+          { value: 6, label: 'Disc' },
+        ],
+        default: 2,
+        surprise: true,
+      },
+      { type: 'slider', id: 'fsym', label: 'Symmetry', min: 1, max: 8, step: 1, default: 3, surprise: [1, 6] },
+      { type: 'slider', id: 'fspread', label: 'Openness', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.2, 0.8] },
+      { type: 'slider', id: 'ftwist', label: 'Twist', min: 0, max: 1, step: 0.01, default: 0.2, surprise: [0, 0.7] },
+      { type: 'slider', id: 'fmorph', label: 'Morph Speed', min: 0, max: 2, step: 0.01, default: 0.5, surprise: [0.2, 1.2], integrate: true },
+      { type: 'slider', id: 'fspin', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0.1, surprise: [-0.6, 0.6], integrate: true },
+      { type: 'slider', id: 'fzoom', label: 'Zoom', min: 0.3, max: 2.5, step: 0.01, default: 1, surprise: [0.7, 1.6] },
+      { type: 'slider', id: 'fbright', label: 'Exposure', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.3, 0.8] },
+      { type: 'slider', id: 'ftrail', label: 'Smoothness', min: 0, max: 1, step: 0.01, default: 0.5, surprise: [0.3, 0.8] },
+      { type: 'slider', id: 'fdensity', label: 'Detail', min: 0.2, max: 1.5, step: 0.01, default: 1, surprise: [0.6, 1.3], perfScale: true },
     ],
   },
   {

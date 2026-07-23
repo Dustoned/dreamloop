@@ -85,13 +85,30 @@ export class Program {
    * seconds — the app would look completely frozen. Call ready() on later frames
    * instead and keep drawing the previous scene until it returns true.
    */
-  constructor(glc: GlContext, fragBody: string, prelude: string, label = 'shader') {
+  private readonly vertSrc: string;
+
+  /**
+   * `opts.vert` supplies a custom vertex shader (default: the fullscreen triangle).
+   * `opts.rawFrag` uses fragBody verbatim as the whole fragment source instead of
+   * wrapping it with the standard prelude — both needed by the flame splat pass,
+   * which draws points through its own vertex shader and a minimal fragment shader.
+   */
+  constructor(
+    glc: GlContext,
+    fragBody: string,
+    prelude: string,
+    label = 'shader',
+    opts: { vert?: string; rawFrag?: boolean } = {},
+  ) {
     const gl = glc.gl;
     this.gl = gl;
     this.glc = glc;
     this.label = label;
-    this.fragSrc = `#version 300 es\nprecision highp float;\nprecision highp int;\n${prelude}\n${fragBody}`;
-    const vs = compileShader(gl, gl.VERTEX_SHADER, VERT, `${label}.vert`);
+    this.vertSrc = opts.vert ?? VERT;
+    this.fragSrc = opts.rawFrag
+      ? fragBody
+      : `#version 300 es\nprecision highp float;\nprecision highp int;\n${prelude}\n${fragBody}`;
+    const vs = compileShader(gl, gl.VERTEX_SHADER, this.vertSrc, `${label}.vert`);
     const fs = compileShader(gl, gl.FRAGMENT_SHADER, this.fragSrc, `${label}.frag`);
     const prog = gl.createProgram()!;
     gl.attachShader(prog, vs);
@@ -129,7 +146,7 @@ export class Program {
 
     if (!gl.getProgramParameter(this.prog, gl.LINK_STATUS)) {
       reportShaderError(gl, this.fs, this.fragSrc, `${this.label}.frag`);
-      reportShaderError(gl, this.vs, VERT, `${this.label}.vert`);
+      reportShaderError(gl, this.vs, this.vertSrc, `${this.label}.vert`);
       console.error(
         `[dreamloop] program link failed (${this.label}): ${gl.getProgramInfoLog(this.prog)}`,
       );

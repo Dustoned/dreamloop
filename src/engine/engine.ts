@@ -7,6 +7,9 @@ import {
   BLOOM_BRIGHT_FRAG,
   COMMON_GLSL,
   FINAL_FRAG,
+  FLAME_FADE_FRAG,
+  FLAME_SPLAT_FRAG,
+  FLAME_SPLAT_VERT,
   TISSUE_SIM_FRAG,
   effectById,
 } from '../effects';
@@ -39,6 +42,12 @@ export class Engine {
   private sim: PingPong | null = null;
   private simSeeded = false;
   private feedbackPrimed = false;
+  /** Persistent density buffer for the fractal-flame scene; null until first used. */
+  private flameAccum: PingPong | null = null;
+  private flameProg: Program | null = null;
+  private flameFadeProg: Program | null = null;
+  /** Real elapsed seconds this frame (unscaled), for frame-rate-independent decay. */
+  private lastDt = 1 / 60;
   private readonly palette: PaletteTexture;
   private paletteKey = '';
   private lastScene = '';
@@ -269,6 +278,7 @@ export class Engine {
     if (this.lastNow < 0) this.lastNow = nowMs;
     const dt = Math.min((nowMs - this.lastNow) / 1000, 0.1);
     this.lastNow = nowMs;
+    this.lastDt = dt;
     this.time += dt * num(st.params['global.speed'], 1);
     // Rate sliders are integrated, so changing one bends the motion from here on
     // instead of rescaling everything that already happened.
@@ -314,6 +324,7 @@ export class Engine {
       this.lastScene = st.scene;
       this.feedback.clear();
       this.simSeeded = false;
+      this.flameAccum?.clear();
     }
 
     // 1. Scene pass. If its shader is still linking, hold the last frame on screen
@@ -327,13 +338,19 @@ export class Engine {
     }
     this.compiling = false;
     if (sceneDef.passes === 'sim') this.runSim(st, sceneDef.id);
-    sp.use();
-    this.sceneRT.bind();
-    this.setStd(sp, iw, ih);
-    this.uploadParams(sp, sceneDef, st, `scene.${sceneDef.id}.`);
-    sp.bindTex('u_palette', this.palette.tex, 0);
-    if (this.sim && sceneDef.passes === 'sim') sp.bindTex('u_prev', this.sim.read.tex, 2);
-    glc.drawFullscreen();
+    if (sceneDef.passes === 'flame') {
+      // Point-splatting scene: accumulate the chaos game, then tone-map into sceneRT.
+      // `sp` here is the tone-map program (the scene def's frag).
+      this.runFlame(st, sceneDef, sp, iw, ih);
+    } else {
+      sp.use();
+      this.sceneRT.bind();
+      this.setStd(sp, iw, ih);
+      this.uploadParams(sp, sceneDef, st, `scene.${sceneDef.id}.`);
+      sp.bindTex('u_palette', this.palette.tex, 0);
+      if (this.sim && sceneDef.passes === 'sim') sp.bindTex('u_prev', this.sim.read.tex, 2);
+      glc.drawFullscreen();
+    }
 
     // 2. Feedback pass. With Echo off this pass is mathematically an identity
     // copy, so skip it entirely — that saves a full-screen pass every frame,
@@ -391,6 +408,73 @@ export class Engine {
 
     this.renderFinal(st, current, cw, ch);
     this.frameIdx++;
+  }
+
+  /**
+   * Fractal flame: a chaos-game IFS splatted as hundreds of thousands of additive
+   * points into a persistent float density buffer that decays a little each frame,
+   * then log-density tone-mapped into sceneRT so the rest of the pipeline is normal.
+   * `tonemap` is the scene def's own program (its frag reads the density buffer).
+   */
+  private runFlame(st: ParamState, def: EffectDef, tonemap: Program, iw: number, ih: number): void {
+    const glc = this.glc;
+    const gl = glc.gl;
+    const prefix = `scene.${def.id}.`;
+
+    if (!this.flameAccum) {
+      this.flameAccum = new PingPong(glc, iw, ih);
+      this.flameAccum.clear(); // texImage2D leaves contents undefined; start at zero
+    }
+    this.flameAccum.resize(iw, ih);
+
+    if (!this.flameProg) {
+      this.flameProg = new Program(glc, FLAME_SPLAT_FRAG, this.prelude, 'flame:splat', {
+        vert: FLAME_SPLAT_VERT,
+        rawFrag: true,
+      });
+    }
+    if (!this.flameFadeProg) {
+      this.flameFadeProg = new Program(glc, FLAME_FADE_FRAG, this.prelude, 'flame:fade');
+    }
+    const splat = this.flameProg;
+    const fade = this.flameFadeProg;
+    // Hold the previous frame while the two custom programs are still linking.
+    if (!splat.ready() || !fade.ready()) return;
+
+    // 1. Fade the running density down, frame-rate-independent (read -> write).
+    const trail = num(st.params[prefix + 'ftrail'], 0.5);
+    const tau = 0.08 + trail * 0.55; // seconds of memory
+    const decay = Math.exp(-this.lastDt / tau);
+    fade.use();
+    this.flameAccum.write.bind();
+    gl.disable(gl.BLEND);
+    this.setStd(fade, iw, ih);
+    fade.set1f('u_decay', decay);
+    fade.bindTex('u_src', this.flameAccum.read.tex, 1);
+    glc.drawFullscreen();
+
+    // 2. Splat the chaos game additively onto the just-faded buffer.
+    const detail = this.detailScale * (this.autoAdjust ? this.degradeScale : 1);
+    const dens = num(st.params[prefix + 'fdensity'], 1);
+    const n = Math.max(4000, Math.min(240000, Math.round(dens * 90000 * detail)));
+    splat.use();
+    this.setStd(splat, iw, ih);
+    this.uploadParams(splat, def, st, prefix);
+    splat.bindTex('u_palette', this.palette.tex, 0);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE);
+    glc.drawPoints(n);
+    gl.disable(gl.BLEND);
+    this.flameAccum.swap();
+
+    // 3. Tone-map the density buffer into sceneRT.
+    tonemap.use();
+    this.sceneRT.bind();
+    this.setStd(tonemap, iw, ih);
+    this.uploadParams(tonemap, def, st, prefix);
+    tonemap.bindTex('u_palette', this.palette.tex, 0);
+    tonemap.bindTex('u_src', this.flameAccum.read.tex, 1);
+    glc.drawFullscreen();
   }
 
   /** Gray-Scott sim steps at fixed 512²/256², independent of screen resolution. */

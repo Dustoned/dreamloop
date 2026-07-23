@@ -30,6 +30,9 @@ export class GlContext {
       gl.getExtension('EXT_color_buffer_half_float') || gl.getExtension('EXT_color_buffer_float')
     );
     this.parallelCompile = gl.getExtension('KHR_parallel_shader_compile');
+    // Needed to additively blend into float render targets (the fractal-flame
+    // density buffer). Harmless to request where it is not required.
+    gl.getExtension('EXT_float_blend');
     gl.disable(gl.DEPTH_TEST);
     gl.disable(gl.BLEND);
     gl.clearColor(0, 0, 0, 1);
@@ -38,6 +41,11 @@ export class GlContext {
   /** Draw the fullscreen triangle (positions generated from gl_VertexID, no buffers). */
   drawFullscreen(): void {
     this.gl.drawArrays(this.gl.TRIANGLES, 0, 3);
+  }
+
+  /** Draw n GL_POINTS with no vertex buffers; the vertex shader builds each from gl_VertexID. */
+  drawPoints(n: number): void {
+    this.gl.drawArrays(this.gl.POINTS, 0, n);
   }
 }
 

@@ -78,8 +78,8 @@ export interface EffectDef {
   params: ParamDef[];
   /** Rough GPU cost: 1 cheap, 2 medium, 3 heavy. Drives auto-degrade & mobile defaults. */
   cost: 1 | 2 | 3;
-  /** Multi-pass orchestration; everything but bloom and the RD sim is 'single'. */
-  passes?: 'single' | 'bloom' | 'sim';
+  /** Multi-pass orchestration; everything but bloom, the RD sim, and flames is 'single'. */
+  passes?: 'single' | 'bloom' | 'sim' | 'flame';
   /**
    * Built-in musical response, chosen to suit this particular effect, so music is
    * visible everywhere without the user wiring anything up. Applies only while a
