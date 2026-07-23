@@ -16,6 +16,7 @@ class PartyMode {
   intervalSec = 90;
   private timer: number | undefined;
   private pollTimer: number | undefined;
+  private dipTimer: number | undefined;
   private listeners = new Set<() => void>();
 
   subscribe(fn: () => void): () => void {
@@ -42,6 +43,9 @@ class PartyMode {
     document.body.classList.remove('party-active');
     clearTimeout(this.timer);
     clearTimeout(this.pollTimer);
+    // The dip-and-swap is a separate timer; without cancelling it, exiting within
+    // ~260 ms of a scheduled switch still swapped the look once after you left.
+    clearTimeout(this.dipTimer);
     if (document.fullscreenElement) void document.exitFullscreen().catch(() => undefined);
     this.emit();
   }
@@ -78,7 +82,11 @@ class PartyMode {
   private switchNow(): void {
     const dip = document.getElementById('dip');
     dip?.classList.add('on');
-    window.setTimeout(() => {
+    this.dipTimer = window.setTimeout(() => {
+      if (!this.active) {
+        dip?.classList.remove('on');
+        return;
+      }
       const usePreset = Math.random() < 0.5;
       if (usePreset) store.applySnapshot(hydrate(pick(BUILTIN_PRESETS).state));
       else store.applySnapshot(makeSurprise());

@@ -133,13 +133,17 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
   const rect = useRef<{ left: number; width: number } | null>(null);
   /** Touch only: where the finger landed, until we know it is a drag not a scroll. */
   const pending = useRef<{ x: number; y: number } | null>(null);
-  const setFromClient = (clientX: number) => {
-    const r = rect.current ?? track.current!.getBoundingClientRect();
-    const next = fromT(def, (clientX - r.left) / r.width);
-    // Asking for a quality must also clear any automatic reduction, or the
-    // slider appears to do nothing.
+  // Any deliberate change to Resolution must clear the automatic penalty, or the
+  // slider appears to do nothing. This has to fire from every path that sets it —
+  // drag, keyboard and double-click reset — not just the drag.
+  const commit = (next: number) => {
     if (path === 'global.quality') perfMonitor.restore();
     store.set(path, next);
+  };
+
+  const setFromClient = (clientX: number) => {
+    const r = rect.current ?? track.current!.getBoundingClientRect();
+    commit(fromT(def, (clientX - r.left) / r.width));
   };
 
   const nudge = (dir: number, big: boolean) => {
@@ -149,7 +153,7 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
     const step = def.step ?? 0;
     const byStep = step > 0 ? value + dir * step * (big ? 5 : 1) : byFraction;
     const next = Math.abs(byFraction - value) >= Math.abs(byStep - value) ? byFraction : byStep;
-    store.set(path, Math.min(def.max, Math.max(def.min, next)));
+    commit(Math.min(def.max, Math.max(def.min, next)));
   };
 
   return (
@@ -172,7 +176,7 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
         // same row, so double-clicking it used to throw the value away silently.
         onDblClick={(e) => {
           if ((e.target as HTMLElement).closest('.mod-btn, .mod-popover')) return;
-          store.set(path, def.default);
+          commit(def.default);
         }}
       >
         <span class="ctl-label">{def.label}</span>

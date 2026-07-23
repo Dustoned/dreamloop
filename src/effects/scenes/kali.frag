@@ -48,17 +48,21 @@ void main() {
   int n = int(u_iter);
   for (int i = 0; i < 16; i++) {
     if (i >= n) break;
+    // The centre pixel can start exactly at (0,0), where a bare 1/dot(p,p) is 0/0
+    // -> NaN -> a black speck. The spiral fold already guarded it; do the same for
+    // the other three.
+    float q = max(dot(p, p), 0.06);
     if (u_kformula < 0.5) {
-      p = abs(p) / dot(p, p) - c;                      // classic Kali
+      p = abs(p) / q - c;                              // classic Kali
     } else if (u_kformula < 1.5) {
-      p = abs(p) / max(dot(p, p), 0.06) - c;
+      p = abs(p) / q - c;
       p = rot2(0.35) * p;                              // spiral fold
     } else if (u_kformula < 2.5) {
-      p = vec2(abs(p.x) - abs(p.y), abs(p.x * p.y) * 2.0) / dot(p, p) - c; // burning fold
+      p = vec2(abs(p.x) - abs(p.y), abs(p.x * p.y) * 2.0) / q - c; // burning fold
     } else {
       p = abs(p);
       if (p.x < p.y) p = p.yx;
-      p = p / dot(p, p) - c;                           // triangle fold
+      p = p / q - c;                                   // triangle fold
     }
     float m = dot(p, p);
     trap = min(trap, abs(sqrt(m) - 0.35));

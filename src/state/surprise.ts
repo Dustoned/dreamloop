@@ -35,7 +35,12 @@ export function makeSurprise(): ParamState {
     randomizeParams(s, prefix, def.params);
   }
   randomizeParams(s, 'global.', GLOBAL_PARAMS);
+  // Performance settings are the user's, not the dice's — keep all three, not just
+  // Resolution. Surprising someone should never quietly turn Auto-quality back on
+  // or reset Shader Detail.
   s.params['global.quality'] = store.state.params['global.quality'];
+  s.params['global.detail'] = store.state.params['global.detail'];
+  s.params['global.autoquality'] = store.state.params['global.autoquality'];
 
   const extras = ['kaleido', 'pixelate', 'poster', 'prism', 'glow', 'rainbow'].sort(
     () => rnd() - 0.5,

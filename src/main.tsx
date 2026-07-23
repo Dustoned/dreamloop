@@ -19,18 +19,31 @@ import './styles/app.css';
 store.init(buildDefaultState());
 
 // Boot priority: shared code in the URL > last session > defaults.
-let isReturningVisitor = false;
+//
+// A shared code carries the LOOK, but not the performance settings — those are
+// deliberately local-only (urlCodec strips them). So a share-link visitor still
+// needs the device profile to choose Resolution and Auto-quality for them, exactly
+// like a fresh visitor. Only a restored SESSION already contains the user's own
+// perf choices and must be left alone. `applyDevicePerf` (set up once glc exists)
+// is called here for the share-link case, after the async decode lands.
+let isSessionRestore = false;
+let applyDevicePerf: (() => void) | null = null;
+let pendingDevicePerf = false;
+
 const hashCode = codeFromHash();
 if (hashCode) {
   void decodeCode(hashCode).then((st) => {
     if (st) store.applySnapshot(st);
+    // The snapshot's perf keys are defaults (1 / off); overwrite them with values
+    // suited to this device, whether or not glc has finished initialising yet.
+    if (applyDevicePerf) applyDevicePerf();
+    else pendingDevicePerf = true;
   });
-  isReturningVisitor = true;
 } else {
   const sess = loadSession();
   if (sess) {
     store.applySnapshot(hydrate(sess));
-    isReturningVisitor = true;
+    isSessionRestore = true;
   }
 }
 
@@ -61,9 +74,15 @@ if (glc) {
   const device = detectDevice(glc.gl);
   glc.allowFloatTargets = device.useFloatTargets;
   glc.useInvalidate = device.useInvalidate;
-  if (!isReturningVisitor) {
+  applyDevicePerf = () => {
     store.set('global.quality', device.startQuality);
     store.set('global.autoquality', device.tier !== 'high');
+  };
+  // A fresh visitor (no session, no code) gets device defaults now; a session
+  // restore keeps its own; a share-link visitor gets them from the decode above
+  // (or right now if that already resolved).
+  if (!isSessionRestore && (!hashCode || pendingDevicePerf)) {
+    applyDevicePerf();
   }
   // Drop the frosted-glass blur, which the GPU would otherwise recompute over the
   // live canvas every frame.
@@ -130,10 +149,21 @@ if (glc) {
       audio.update();
       engine.render(now);
       consumePhoto(canvas);
-      // A frame spent linking a shader is not a slow frame — do not let it trigger
-      // a quality cut, and do not measure across a tab that was in the background.
-      if (!document.hidden && lastFrame > 0 && !engine.compiling) {
-        perf.sample(now - lastFrame, now, store.state.params['global.quality'] as number);
+      // The auto-degrade machinery only runs when the user has opted in. With it
+      // off it used to keep measuring and lowering perf.degrade in the background,
+      // firing a "Turned the quality down" toast that was a lie (the engine ignores
+      // degradeScale when auto is off) and quietly slowing the Living Tissue sim,
+      // which reads degradeScale ungated. Off means off.
+      const autoOn = store.state.params['global.autoquality'] === true;
+      if (!autoOn) {
+        engine.degradeScale = 1;
+      } else if (!document.hidden && lastFrame > 0 && !engine.compiling) {
+        // Recovery ceiling is 1, not the Quality slider: degrade is a multiplier ON
+        // TOP of Quality (rawScale = quality * degrade), so its natural maximum is
+        // 1. Passing the slider as the ceiling made degrade settle at ~quality and
+        // the effective resolution at ~quality² — a medium device never recovered
+        // above its own setting after a single hiccup.
+        perf.sample(now - lastFrame, now, 1);
         engine.degradeScale = perf.degrade;
         if (perf.justDegraded) {
           perf.justDegraded = false;
