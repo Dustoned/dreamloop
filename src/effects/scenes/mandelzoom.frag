@@ -96,15 +96,16 @@ vec3 perturbLayer(float depth, sampler2D refTex, float refLen) {
   float trapR = 1e9, trapL = 1e9, acc = 0.0, m = 0.0, esc = -1.0;
   float stSum = 0.0, stCount = 0.0, stLast = 0.0;
   bool doStripe = u_stripes > 0.001;
-  float maxIter = min(refLen - 1.0, u_iters * 10.0);
+  float maxIter = min(refLen - 1.0, u_iters * 7.0);
   int budget = int(maxIter);
+  vec2 Zi = texelFetch(refTex, ivec2(0, 0), 0).xy;   // Z_0; carried so it is one fetch/iter
   for (int i = 0; i < 4096; i++) {
     if (i >= budget) break;
-    vec2 Zi = texelFetch(refTex, ivec2(i, 0), 0).xy;
-    vec2 zi = Zi + dlt;
-    dz = 2.0 * cmul(zi, dz) + vec2(1.0, 0.0);
-    dlt = 2.0 * cmul(Zi, dlt) + cmul(dlt, dlt) + dc0;
-    z = texelFetch(refTex, ivec2(i + 1, 0), 0).xy + dlt;
+    vec2 zi = Zi + dlt;                                // z_i
+    dz = 2.0 * cmul(zi, dz) + vec2(1.0, 0.0);          // z'_{i+1}
+    dlt = 2.0 * cmul(Zi, dlt) + cmul(dlt, dlt) + dc0;  // δ_{i+1}
+    Zi = texelFetch(refTex, ivec2(i + 1, 0), 0).xy;    // Z_{i+1}
+    z = Zi + dlt;                                       // z_{i+1}
     if (doStripe) { stLast = 0.5 + 0.5 * sin(6.0 * atan(z.y, z.x)); stSum += stLast; stCount += 1.0; }
     m = dot(z, z);
     trapR = min(trapR, m);
@@ -172,9 +173,14 @@ void main() {
   bool inf = u_engine > 0.5;
   bool infDive = inf && u_zmode < 0.5;
   if (infDive) {
-    vec3 cA = perturbLayer(u_pdepthA, u_ref, u_refLen);
-    vec3 cB = perturbLayer(u_pdepthB, u_refB, u_refLenB);
-    fragColor = vec4(max(mix(cB, cA, clamp(u_wA, 0.0, 1.0)), 0.0), 1.0);
+    // u_wA is a frame-wide uniform, so this branch is coherent across the whole draw:
+    // when one layer dominates we skip the other entirely and pay for just one.
+    vec3 col;
+    if (u_wA > 0.985) col = perturbLayer(u_pdepthA, u_ref, u_refLen);
+    else if (u_wA < 0.015) col = perturbLayer(u_pdepthB, u_refB, u_refLenB);
+    else col = mix(perturbLayer(u_pdepthB, u_refB, u_refLenB),
+                   perturbLayer(u_pdepthA, u_ref, u_refLen), u_wA);
+    fragColor = vec4(max(col, 0.0), 1.0);
     return;
   }
 

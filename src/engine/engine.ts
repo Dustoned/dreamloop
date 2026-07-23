@@ -306,7 +306,17 @@ export class Engine {
     let scale = Math.max(0.15, Math.round(rawScale * 20) / 20);
     // Guard rail: never allocate more than ~17M pixels per target, whatever the
     // slider says, or a big screen at 200% would exhaust memory.
-    const maxPixels = 17e6;
+    let maxPixels = 17e6;
+    // Deep Zoom ∞ runs TWO thousand-iteration perturbation loops per pixel, so it is
+    // by far the heaviest scene — cap its internal resolution hard (the final blit
+    // upscales, and a smooth fractal hides it) so it stays 60fps even on a 4K display.
+    if (
+      st.scene === 'mandelzoom' &&
+      num(st.params['scene.mandelzoom.engine'], 1) > 0.5 &&
+      num(st.params['scene.mandelzoom.zmode'], 0) < 0.5
+    ) {
+      maxPixels = 1.3e6;
+    }
     if (cw * ch * scale * scale > maxPixels) scale = Math.sqrt(maxPixels / (cw * ch));
     const iw = Math.max(64, Math.round(cw * scale));
     const ih = Math.max(64, Math.round(ch * scale));
@@ -438,8 +448,8 @@ export class Engine {
     [-0.7269, 0.1889], // Seahorse Valley — second spiral
   ];
   private infTravel = 0;
-  private static readonly INF_LO = 9.0; // shallowest depth of a layer (perturbation-accurate)
-  private static readonly INF_PERIOD = 30.0; // octaves per dive before it hands to the crossfade
+  private static readonly INF_LO = 8.0; // shallowest depth of a layer (perturbation-accurate)
+  private static readonly INF_PERIOD = 24.0; // octaves per dive; smaller = cheaper (shallower floor)
 
   /**
    * The ∞ constant-speed endless dive. TWO perturbation layers, offset half a cycle,
