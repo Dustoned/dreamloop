@@ -50,7 +50,7 @@ export class Engine {
   private palShift = 0;
   private palSpread = 1;
   /** Written by the audio module each frame; zeros when no source is active. */
-  audio: AudioFrame = { bass: 0, mid: 0, treble: 0, beat: 0 };
+  audio: AudioFrame = { sub: 0, bass: 0, mid: 0, treble: 0, beat: 0 };
   /** Extra internal-resolution factor set by the auto-degrade logic (perf.ts). */
   degradeScale = 1;
   /** Whether the user has opted into automatic quality reduction at all. */
@@ -223,16 +223,28 @@ export class Engine {
     p.set1f('u_lodScale', this.detailScale * (this.autoAdjust ? this.degradeScale : 1));
   }
 
-  /** pulse, flash, sparkle — mapping toggles scaled by the master amount. */
-  private audioFx(st: ParamState): [number, number, number] {
+  /**
+   * The whole-frame musical accents, each a toggle scaled by the master amount.
+   * Six numbers, uploaded as two vec3s. Bass Pulse rides SUB-bass, not the full
+   * bass band, so it moves on the kick and the bassline rather than on anything
+   * that merely has low-frequency content.
+   */
+  private audioFx(st: ParamState): { fx: [number, number, number]; fx2: [number, number, number] } {
     const amt = st.audio.amount;
     const m = st.audio.mappings;
     const a = this.audio;
-    return [
-      m.includes('bassPulse') ? amt * a.bass : 0,
-      m.includes('beatFlash') ? amt * a.beat : 0,
-      m.includes('trebleSparkle') ? amt * a.treble : 0,
-    ];
+    return {
+      fx: [
+        m.includes('bassPulse') ? amt * a.sub : 0,
+        m.includes('beatFlash') ? amt * a.beat : 0,
+        m.includes('trebleSparkle') ? amt * a.treble : 0,
+      ],
+      fx2: [
+        m.includes('midSway') ? amt * a.mid : 0,
+        m.includes('beatColour') ? amt * a.beat : 0,
+        0,
+      ],
+    };
   }
 
   render(nowMs: number): void {
@@ -476,8 +488,9 @@ export class Engine {
     this.setStd(this.finalProg, cw, ch);
     this.uploadParams(this.finalProg, finishDef, st, 'fx.finish.');
     this.finalProg.set1f('u_enabled', finishOn ? 1 : 0);
-    const [pulse, flash, sparkle] = this.audioFx(st);
-    this.finalProg.set3f('u_audioFx', pulse, flash, sparkle);
+    const { fx, fx2 } = this.audioFx(st);
+    this.finalProg.set3f('u_audioFx', fx[0], fx[1], fx[2]);
+    this.finalProg.set3f('u_audioFx2', fx2[0], fx2[1], fx2[2]);
     this.finalProg.set3f(
       'u_grade',
       num(st.params['global.brightness'], 1),

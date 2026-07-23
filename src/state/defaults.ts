@@ -53,7 +53,13 @@ function defForPath(path: string): ParamDef | undefined {
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
-const MAPPINGS: AudioMapping[] = ['bassPulse', 'beatFlash', 'trebleSparkle'];
+const MAPPINGS: AudioMapping[] = [
+  'bassPulse',
+  'beatFlash',
+  'trebleSparkle',
+  'midSway',
+  'beatColour',
+];
 const BANDS: AudioBand[] = ['bass', 'mid', 'treble', 'beat'];
 
 /**

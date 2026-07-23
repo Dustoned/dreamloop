@@ -89,7 +89,12 @@ export interface EffectDef {
   audioReact?: { id: string; band: AudioBand; amount: number }[];
 }
 
-export type AudioMapping = 'bassPulse' | 'beatFlash' | 'trebleSparkle';
+export type AudioMapping =
+  | 'bassPulse'
+  | 'beatFlash'
+  | 'trebleSparkle'
+  | 'midSway'
+  | 'beatColour';
 
 export type AudioBand = 'bass' | 'mid' | 'treble' | 'beat';
 
@@ -119,6 +124,8 @@ export interface ParamState {
 
 /** Live audio analysis, written by the analyser, read by the engine each frame. */
 export interface AudioFrame {
+  /** Sub-bass only (~23-120 Hz): the kick and the bassline, not low vocals. */
+  sub: number;
   bass: number;
   mid: number;
   treble: number;

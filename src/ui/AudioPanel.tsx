@@ -50,6 +50,8 @@ function MappingChips() {
     { id: 'bassPulse', label: 'Bass → pulse' },
     { id: 'beatFlash', label: 'Beat → flash' },
     { id: 'trebleSparkle', label: 'Treble → sparkle' },
+    { id: 'midSway', label: 'Mid → sway' },
+    { id: 'beatColour', label: 'Beat → colour' },
   ];
   return (
     <div class="mapping-chips">

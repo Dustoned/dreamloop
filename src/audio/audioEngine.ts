@@ -8,7 +8,7 @@ export type AudioSourceKind = 'none' | 'file' | 'tab' | 'mic';
  * engine, zero events); source/error changes notify UI subscribers.
  */
 class AudioEngine {
-  frame: AudioFrame = { bass: 0, mid: 0, treble: 0, beat: 0 };
+  frame: AudioFrame = { sub: 0, bass: 0, mid: 0, treble: 0, beat: 0 };
   kind: AudioSourceKind = 'none';
   error = '';
   trackName = '';
@@ -24,7 +24,7 @@ class AudioEngine {
   private stream: MediaStream | null = null;
   private listeners = new Set<() => void>();
 
-  private sm = { bass: 0, mid: 0, treble: 0 };
+  private sm = { sub: 0, bass: 0, mid: 0, treble: 0 };
   /**
    * Rolling loudness window per band, for the auto-gain in bands(). getByteFrequency
    * maps -100..-30 dB onto 0..255, and ordinary music sits near the top of that
@@ -33,6 +33,7 @@ class AudioEngine {
    * which is what made the reactions feel violent even at low Audio Reactivity.
    */
   private gain = {
+    sub: { lo: 1, hi: 0 },
     bass: { lo: 1, hi: 0 },
     mid: { lo: 1, hi: 0 },
     treble: { lo: 1, hi: 0 },
@@ -67,8 +68,13 @@ class AudioEngine {
 
   /** A new source has its own loudness; the previous one's window would mis-scale it. */
   private resetLevels(): void {
-    this.gain = { bass: { lo: 1, hi: 0 }, mid: { lo: 1, hi: 0 }, treble: { lo: 1, hi: 0 } };
-    this.sm = { bass: 0, mid: 0, treble: 0 };
+    this.gain = {
+      sub: { lo: 1, hi: 0 },
+      bass: { lo: 1, hi: 0 },
+      mid: { lo: 1, hi: 0 },
+      treble: { lo: 1, hi: 0 },
+    };
+    this.sm = { sub: 0, bass: 0, mid: 0, treble: 0 };
     this.beatAvg = 0;
     this.beatEnv = 0;
     this.beatCooldown = 0;
@@ -226,6 +232,7 @@ class AudioEngine {
   update(): void {
     const f = this.frame;
     if (!this.analyser || this.kind === 'none') {
+      f.sub *= 0.9;
       f.bass *= 0.9;
       f.mid *= 0.9;
       f.treble *= 0.9;
@@ -240,6 +247,7 @@ class AudioEngine {
       for (let i = a; i < b; i++) s += d[i];
       return s / (b - a) / 255;
     };
+    const rawSub = avg(1, 6); // ~23-140 Hz: kick + bassline only
     const rawBass = avg(1, 11); // ~23-260 Hz
     const rawMid = avg(11, 86); // ~260-2000 Hz
     const rawTreble = avg(86, 513); // ~2-12 kHz
@@ -251,17 +259,21 @@ class AudioEngine {
     const now = performance.now() / 1000;
     const dt = this.lastAt > 0 ? Math.min(0.25, Math.max(0.001, now - this.lastAt)) : 0.016;
     this.lastAt = now;
+    this.sm.sub = sm(this.sm.sub, this.agc(this.gain.sub, rawSub, dt));
     this.sm.bass = sm(this.sm.bass, this.agc(this.gain.bass, rawBass, dt));
     this.sm.mid = sm(this.sm.mid, this.agc(this.gain.mid, rawMid, dt));
     this.sm.treble = sm(this.sm.treble, this.agc(this.gain.treble, rawTreble, dt));
+    f.sub = this.sm.sub;
     f.bass = this.sm.bass;
     f.mid = this.sm.mid;
     f.treble = this.sm.treble;
 
-    // beat: bass energy spike vs rolling average, with a refractory period
-    this.beatAvg = this.beatAvg * 0.985 + rawBass * 0.015;
+    // beat: a spike in SUB-bass, not the whole bass band, so a loud vocal or a
+    // snare in the 150-260 Hz range no longer trips the beat. Kick drums live
+    // below 140 Hz, which is exactly rawSub.
+    this.beatAvg = this.beatAvg * 0.985 + rawSub * 0.015;
     this.beatCooldown = Math.max(0, this.beatCooldown - 1);
-    if (this.beatCooldown === 0 && rawBass > 0.15 && rawBass > this.beatAvg * 1.45) {
+    if (this.beatCooldown === 0 && rawSub > 0.15 && rawSub > this.beatAvg * 1.5) {
       this.beatEnv = 1;
       this.beatCooldown = 14;
     }

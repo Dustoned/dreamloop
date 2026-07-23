@@ -789,6 +789,8 @@ const RESERVED_UNIFORMS = new Set([
   'frame',
   'audio',
   'audioAmt',
+  'audioFx',
+  'audioFx2',
   'palShift',
   'palSpread',
   'lodScale',
