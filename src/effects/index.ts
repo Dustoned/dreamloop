@@ -382,6 +382,7 @@ export const EFFECTS: EffectDef[] = [
       { type: 'slider', id: 'twinkle', label: 'Twinkle', min: 0, max: 1, step: 0.01, default: 0.5 },
       { type: 'slider', id: 'layers', label: 'Layers', min: 3, max: 8, step: 1, default: 5, perfScale: true },
       { type: 'slider', id: 'starsize', label: 'Star Size', min: 0.5, max: 2, step: 0.01, default: 1, surprise: [0.7, 1.6] },
+      { type: 'slider', id: 'streak', label: 'Warp Streaks', min: 0, max: 1, step: 0.01, default: 0, surprise: [0, 0.8] },
     ],
   },
   {
@@ -659,6 +660,7 @@ export const EFFECTS: EffectDef[] = [
         default: 0,
         surprise: true,
       },
+      { type: 'slider', id: 'fhue', label: 'Rainbow Trails', min: 0, max: 1, step: 0.01, default: 0, surprise: [0, 0.7] },
     ],
   },
   {
