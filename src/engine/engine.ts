@@ -254,7 +254,11 @@ export class Engine {
    * bass band, so it moves on the kick and the bassline rather than on anything
    * that merely has low-frequency content.
    */
-  private audioFx(st: ParamState): { fx: [number, number, number]; fx2: [number, number, number] } {
+  private audioFx(st: ParamState): {
+    fx: [number, number, number];
+    fx2: [number, number, number];
+    fx3: [number, number, number];
+  } {
     const amt = this.drive(st);
     const m = st.audio.mappings;
     const a = this.audio;
@@ -269,6 +273,7 @@ export class Engine {
         m.includes('beatColour') ? amt * a.beat : 0,
         m.includes('beatPunch') ? amt * a.beat : 0,
       ],
+      fx3: [m.includes('bassWarp') ? amt * a.sub : 0, 0, 0],
     };
   }
 
@@ -765,9 +770,10 @@ export class Engine {
     this.setStd(this.finalProg, cw, ch);
     this.uploadParams(this.finalProg, finishDef, st, 'fx.finish.');
     this.finalProg.set1f('u_enabled', finishOn ? 1 : 0);
-    const { fx, fx2 } = this.audioFx(st);
+    const { fx, fx2, fx3 } = this.audioFx(st);
     this.finalProg.set3f('u_audioFx', fx[0], fx[1], fx[2]);
     this.finalProg.set3f('u_audioFx2', fx2[0], fx2[1], fx2[2]);
+    this.finalProg.set3f('u_audioFx3', fx3[0], fx3[1], fx3[2]);
     this.finalProg.set3f(
       'u_grade',
       num(st.params['global.brightness'], 1),

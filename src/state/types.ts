@@ -111,7 +111,8 @@ export type AudioMapping =
   | 'trebleSparkle'
   | 'midSway'
   | 'beatColour'
-  | 'beatPunch';
+  | 'beatPunch'
+  | 'bassWarp';
 
 export type AudioBand = 'bass' | 'mid' | 'treble' | 'beat';
 

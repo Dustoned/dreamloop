@@ -53,6 +53,7 @@ function MappingChips() {
     { id: 'midSway', label: 'Mid → sway' },
     { id: 'beatColour', label: 'Beat → colour' },
     { id: 'beatPunch', label: 'Beat → punch' },
+    { id: 'bassWarp', label: 'Bass → warp' },
   ];
   return (
     <div class="mapping-chips">

@@ -89,6 +89,10 @@ class ParamStore {
     for (const key of ['global.quality', 'global.detail', 'global.autoquality'] as const) {
       if (this.state.params[key] !== undefined) s.params[key] = this.state.params[key];
     }
+    // The Audio Reactivity level and accent chips are the user's, like the perf
+    // knobs: applying a preset (or Party Mode switching between them) should change
+    // the LOOK, not silently reset how hard the visuals ride the music.
+    s.audio = { amount: this.state.audio.amount, mappings: [...this.state.audio.mappings] };
     this.applySnapshot(s);
   }
 

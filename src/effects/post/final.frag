@@ -5,6 +5,8 @@ uniform float u_enabled;
 // pulse, flash, sparkle — already scaled by the audio-reactivity amount CPU-side.
 // (u_audioFx2 — sway, colour-kick — is declared in the shared prelude.)
 uniform vec3 u_audioFx;
+// x = bass warp (liquid ripple on the sub-bass); y/z spare
+uniform vec3 u_audioFx3;
 // global image grade: brightness, contrast, saturation
 uniform vec3 u_grade;
 // global static hue rotation, radians
@@ -26,10 +28,23 @@ void main() {
 
   // Mid sway: a slow whole-frame roll on the mids. Tiny angle; it reads as the
   // image leaning with the music rather than spinning.
-  float sway = u_audioFx2.x * 0.08 * sin(u_time * 0.7);
+  // The lean direction wanders with sin(), but its magnitude is floored: without
+  // the floor the sway vanished completely twice per cycle — the chip felt dead.
+  float swDir = sin(u_time * 0.7);
+  float sway = u_audioFx2.x * 0.10 * sign(swDir) * max(abs(swDir), 0.45);
   vec2 q = uv - 0.5;
   float cs = cos(sway), sn = sin(sway);
   uv = 0.5 + mat2(cs, -sn, sn, cs) * q;
+
+  // Bass warp: the sub-bass sends a liquid ripple through the whole frame —
+  // concentric rings racing outward from the centre, faded near it so it never tears.
+  float wa = u_audioFx3.x;
+  if (wa > 0.001) {
+    vec2 wq = uv - 0.5;
+    float wr = length(wq);
+    uv += normalize(wq + 1e-5) * sin(wr * 26.0 - u_time * 5.0) * wa * 0.035
+        * smoothstep(0.0, 0.22, wr);
+  }
 
   vec3 c = textureLod(u_src, uv, 0.0).rgb;
 
