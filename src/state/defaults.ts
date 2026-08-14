@@ -21,7 +21,7 @@ export function buildDefaultState(): ParamState {
     effects: DEFAULT_EFFECT_ORDER.map((id) => ({ id, on: DEFAULT_EFFECTS_ON.has(id) })),
     palette: { preset: 'neon', stops: [...paletteById('neon')!.stops] },
     macros: { speed: 0.5, intensity: 0.5, complexity: 0.5, zoom: 0.5, warp: 0.5 },
-    audio: { amount: 0.6, mappings: ['bassPulse', 'beatFlash'] },
+    audio: { amount: 0.6, mappings: ['bassPulse', 'beatFlash', 'beatPunch'] },
   };
 }
 

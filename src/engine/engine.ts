@@ -196,6 +196,18 @@ export class Engine {
   }
 
   /**
+   * The master Audio Reactivity slider, mapped super-linearly: 0.2 -> 0.20 (gentle,
+   * unchanged), 0.6 -> 0.90 (as strong as the old linear maximum), 1.0 -> 2.00
+   * (double the old ceiling). Tuning every multiplier so that a LOW setting stays
+   * gentle used to force the top of the dial to be weak too — this curve gives the
+   * top real headroom without touching the bottom.
+   */
+  private drive(st: ParamState): number {
+    const a = st.audio.amount;
+    return a * (0.75 + 1.25 * a);
+  }
+
+  /**
    * Apply a per-slider audio link. Computed here rather than written back to the
    * store, so presets and share codes always capture the user's base setting.
    */
@@ -208,8 +220,7 @@ export class Engine {
     def: EffectDef,
     id: string,
   ): number {
-    const amount = st.audio.amount;
-    if (amount <= 0) return base;
+    if (st.audio.amount <= 0) return base;
 
     // An explicit link the user made wins over the effect's built-in response.
     const mod = st.mods[path];
@@ -217,7 +228,10 @@ export class Engine {
     if (!band) return base;
     const strength = mod ? mod.amt : (def.audioReact!.find((r) => r.id === id)!.amount);
 
-    const v = base + strength * this.audio[band] * (max - min) * amount;
+    // Cap the effective swing at 60% of the range: past that a slider pins against
+    // its limit, which reads as dead rather than dramatic.
+    const k = Math.max(-0.6, Math.min(0.6, strength * this.drive(st)));
+    const v = base + k * this.audio[band] * (max - min);
     return Math.min(max, Math.max(min, v));
   }
 
@@ -241,7 +255,7 @@ export class Engine {
    * that merely has low-frequency content.
    */
   private audioFx(st: ParamState): { fx: [number, number, number]; fx2: [number, number, number] } {
-    const amt = st.audio.amount;
+    const amt = this.drive(st);
     const m = st.audio.mappings;
     const a = this.audio;
     return {
