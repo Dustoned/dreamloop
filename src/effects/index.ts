@@ -457,7 +457,6 @@ export const EFFECTS: EffectDef[] = [
         ],
         default: 0,
         surprise: true,
-        activeWhen: { param: 'zmode', notEquals: 0, andParam: 'engine', andEquals: 1, because: 'the ∞ dive flies its own curated route; switch Zoom Engine to Classic to pick a spot' },
       },
       {
         type: 'select',

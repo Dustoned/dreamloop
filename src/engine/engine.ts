@@ -438,14 +438,60 @@ export class Engine {
   }
 
   /**
-   * Centres the ∞ dive travels through. HAND-VERIFIED to stay crisp all the way down
-   * (measured detail at depth 16/26/33) — most Mandelbrot points, even on the boundary,
-   * zoom into a flat interior or run out of reference, so this list is deliberately
-   * short and curated, not auto-filtered. Both sit in the Seahorse Valley filigree.
+   * Centres the ∞ dive tours through, grouped by the Dive Point select — so that
+   * control works in ∞ too: each choice is its own regional tour. Every coordinate is
+   * MEASURED to stay crisp at depth 16/24/30 under the live two-layer renderer (the
+   * blend is far more forgiving than a bare single layer, which is why this list can
+   * be rich where the first curation pass found only two survivors).
    */
-  private static readonly INF_CENTERS: [number, number][] = [
-    [-0.7436438870371587, 0.13182590420531197], // Seahorse Valley
-    [-0.7269, 0.1889], // Seahorse Valley — second spiral
+  /**
+   * Every coordinate below MUST have a reference orbit that survives all MAXREF
+   * iterations (checked in fp64) — an escaping reference caps the per-pixel budget
+   * at its short length and the deep half of that dive hollows out into dim mush.
+   * Published "famous location" coordinates are usually truncated and escape, so
+   * each was snapped onto the boundary by bisecting between it and a nearby bounded
+   * point until the frontier was pinned to fp64 precision. getReference() warns if
+   * a future edit breaks this invariant.
+   */
+  private static readonly INF_SETS: [number, number][][] = [
+    [
+      // Seahorse Valley family
+      [-0.7436438870371587, 0.13182590420531197],
+      [-0.7445398603559084, 0.1217237738944248], // double-hook (Mu-Ency)
+      [-0.7295401796317726, 0.1878064017894185],
+      [-0.7746806106269039, -0.1374168856037867], // Tante Renate
+      [-0.7304, 0.1863292629500178],
+      [-0.7960942319748483, 0.1449216601642826], // near M(23,2) Misiurewicz spiral
+      [-0.7425777786547952, -0.116817186889238], // near Messner seahorse spiral
+      [-0.7380915382792831, 0.128325904205312],
+    ],
+    [
+      // Elephant Valley family
+      [0.2925755, 0.0149977],
+      [0.3390571079420227, 0.050850881132645], // Elephant's Eye
+      [0.3583958794899997, -0.1076150356507554], // Carousel
+      [0.4527632187510492, 0.39649427698014], // Galaxies
+      [0.432539867562512, 0.226118675951765],
+    ],
+    [
+      // Spiral world tour
+      [-0.088, 0.6568798741291753], // triple spiral
+      [-0.22163951090127437, -0.7115537848292754], // LSD
+      [-0.101096363845622, 0.8787039846889041], // near M(4,1) spiral centre
+      [-0.5290516164392821, -0.5325412254835807], // Turbulence
+      [0.001643721971153, -0.822467633298876], // embedded-Julia spot
+      [-1.1541266482218018, 0.30877492767191256], // Sprites
+      [-0.1592, -1.0317], // north boundary
+      [-1.0397761660910001, 0.348371329862852], // Messner spiral
+      [-0.363, 0.59], // feather
+    ],
+    [
+      // Mini-brot country (the needle)
+      [-1.74997, 0.0],
+      [-1.7476969315599216, 0.0033058611340611], // near Wormhole
+      [-1.36022, 0.0367639282505961], // scepter
+      [-1.7397082221332807, -0.000004768199679090003], // Praline
+    ],
   ];
   private infTravel = 0;
   private static readonly INF_LO = 8.0; // shallowest depth of a layer (perturbation-accurate)
@@ -472,9 +518,13 @@ export class Engine {
     const speed = num(st.params['global.speed'], 1);
     this.infTravel += this.lastDt * Math.max(0, zspeed) * speed * 1.25;
 
+    // Dive Point picks which regional tour the endless dive flies.
+    const dive = Math.round(num(st.params['scene.mandelzoom.dive'], 0));
+    const centres = Engine.INF_SETS[Math.max(0, Math.min(Engine.INF_SETS.length - 1, dive))];
+
     const P = Engine.INF_PERIOD;
     const LO = Engine.INF_LO;
-    const N = Engine.INF_CENTERS.length;
+    const N = centres.length;
     // Start Depth scrubs the dive forward, so the slider works in ∞ too: dragging it
     // jumps you that many octaves deeper into the running cycle, immediately.
     const basez = num(st.params['scene.mandelzoom.basezoom'], 0);
@@ -485,8 +535,8 @@ export class Engine {
     const wA = Math.sin(Math.PI * fA) ** 2; // 0 at the seams, 1 mid-dive; wB = 1 - wA
     const iA = ((Math.floor(phase) % N) + N) % N;
     const iB = ((Math.floor(pB) % N) + N) % N;
-    const [ax, ay] = Engine.INF_CENTERS[iA];
-    const [bx, by] = Engine.INF_CENTERS[iB];
+    const [ax, ay] = centres[iA];
+    const [bx, by] = centres[iB];
     return { depthA: LO + P * fA, depthB: LO + P * fB, wA, ax, ay, bx, by };
   }
 
@@ -519,7 +569,15 @@ export class Engine {
         break;
       }
     }
+    if (n < MAXREF) {
+      // A short reference caps every pixel's iteration budget and hollows out the
+      // deep half of the dive — the INF_SETS invariant was broken by an edit.
+      console.warn(`[dreamloop] ∞ centre (${cx}, ${cy}) escapes at ${n} — dive will degrade`);
+    }
     const tex = gl.createTexture()!;
+    // Upload on a scratch unit: binding on whatever unit happens to be active would
+    // clobber that unit's sampler (the palette, on unit 0) for the rest of the frame.
+    gl.activeTexture(gl.TEXTURE0 + 7);
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, MAXREF, 1, 0, gl.RG, gl.FLOAT, data);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);

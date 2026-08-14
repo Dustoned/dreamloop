@@ -70,8 +70,12 @@ vec2 variation(int v, vec2 p) {
 void main() {
   float id = float(gl_VertexID);
   // Fresh randomness every frame so the accumulation fills in new samples; the
-  // decaying buffer averages them into a smooth image.
-  float seed = id * 0.0011 + u_frame * 0.61803;
+  // decaying buffer averages them into a smooth image. The frame counter is wrapped
+  // because it grows forever: unwrapped, seed crosses fp32's exact range after a few
+  // minutes and adjacent ids start colliding into identical points (the flame slowly
+  // clumps and thins on long sessions). The wrap seam just resamples the noise —
+  // invisible through the accumulation buffer.
+  float seed = id * 0.0011 + mod(u_frame, 4096.0) * 0.61803;
   vec2 p = h22(seed) * 2.0 - 1.0;
   float ci = h11(seed + 7.7);
 

@@ -42,7 +42,7 @@ export function makeSurprise(): ParamState {
   s.params['global.detail'] = store.state.params['global.detail'];
   s.params['global.autoquality'] = store.state.params['global.autoquality'];
 
-  const extras = ['kaleido', 'pixelate', 'poster', 'prism', 'glow', 'rainbow'].sort(
+  const extras = ['kaleido', 'warp', 'pixelate', 'poster', 'prism', 'glow', 'rainbow'].sort(
     () => rnd() - 0.5,
   );
   const chosen = new Set<string>();

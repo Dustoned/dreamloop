@@ -143,7 +143,10 @@ vec3 perturbLayer(float depth, sampler2D refTex, float refLen) {
     ts = t + u_stripes * (mix(a2, a1, fract(sn)) - 0.5) * 0.9;
   }
   float relief = 1.0;
-  if (escaped && u_relief > 0.001) {
+  // Same overflow guard as the DE above: when |dz|^2 leaves fp32 range, cdiv
+  // returns 0 and normalize(0) is NaN — skip relief for those pixels instead.
+  float rl2 = dot(dz, dz);
+  if (escaped && u_relief > 0.001 && rl2 > 1e-30 && rl2 < 1e30) {
     vec2 un = normalize(cdiv(z, dz));
     float lang = 2.3 + u_time * 0.05;
     float refl = clamp((dot(un, vec2(cos(lang), sin(lang))) + 1.5) / 2.5, 0.0, 1.0);
@@ -315,8 +318,10 @@ void main() {
 
   // Relief: light the boundary by the complex-derivative "normal" u = z / z'. Slopes
   // facing the (slowly turning) light brighten, the rest fall into shadow -> embossed 3D.
+  // Guarded like the DE: an overflowed |dz|^2 would make normalize(cdiv(z,dz)) NaN.
   float relief = 1.0;
-  if (escaped && u_relief > 0.001) {
+  float rl2 = dot(dz, dz);
+  if (escaped && u_relief > 0.001 && rl2 > 1e-30 && rl2 < 1e30) {
     vec2 un = normalize(cdiv(z, dz));
     float lang = 2.3 + u_time * 0.05;
     float refl = clamp((dot(un, vec2(cos(lang), sin(lang))) + 1.5) / 2.5, 0.0, 1.0);

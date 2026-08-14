@@ -22,10 +22,11 @@ void main() {
     uv = v_uv + off * amt * 2.0;
   } else if (u_wmode < 1.5) {
     // Ripple: rings race outward; displacement is radial, fading at the centre so
-    // the middle never tears.
+    // the middle never tears. The offset lives in aspect-corrected space, so convert
+    // it back to uv space (same as Twist below) or the rings displace elliptically.
     float r = length(p);
     float w = sin(r * u_wsize * 22.0 - t * 3.0) * smoothstep(0.0, 0.15, r);
-    uv = v_uv + normalize(p + 1e-5) * w * amt;
+    uv = v_uv + normalize(p + 1e-5) * w * amt * vec2(u_res.y / u_res.x, 1.0);
   } else {
     // Twist: rotate around the centre, strongest in the middle, breathing with the
     // flow phase so it wrings back and forth instead of winding up forever.

@@ -63,6 +63,14 @@ const SCENE_COMPLEXITY: Record<string, Target[]> = {
   ribbons: [{ path: 'scene.ribbons.rbands', map: (m) => Math.round(lerp(2, 9, m)) }],
   bloomring: [{ path: 'scene.bloomring.bsegments', map: (m) => Math.round(lerp(3, 18, m)) }],
   pulsewave: [{ path: 'scene.pulsewave.pcount', map: (m) => Math.round(lerp(2, 10, m)) }],
+  flame: [
+    { path: 'scene.flame.fsym', map: (m) => Math.round(lerp(2, 7, m)) },
+    { path: 'scene.flame.fdensity', map: (m) => lerp(0.4, 1.4, m) },
+  ],
+  newton: [
+    { path: 'scene.newton.nk', map: (m) => Math.round(lerp(2, 8, m)) },
+    { path: 'scene.newton.niters', map: (m) => Math.round(lerp(14, 60, m)) },
+  ],
 };
 
 /** Zoom / depth per scene — the "get closer" control. */
@@ -88,6 +96,8 @@ const SCENE_ZOOM: Record<string, Target[]> = {
   ribbons: [{ path: 'scene.ribbons.rwidth', map: (m) => lerp(0.4, 2.4, m) }],
   bloomring: [{ path: 'scene.bloomring.bpetal', map: (m) => lerp(0.2, 1.9, m) }],
   pulsewave: [{ path: 'scene.pulsewave.pthick', map: (m) => lerp(0.4, 2.8, m) }],
+  flame: [{ path: 'scene.flame.fzoom', map: (m) => lerp(0.5, 2.0, m) }],
+  newton: [{ path: 'scene.newton.nzoom', map: (m) => lerp(0.4, 2.4, m) }],
 };
 
 /** Warp / twist — the "bend reality" control. */
@@ -113,6 +123,8 @@ const SCENE_WARP: Record<string, Target[]> = {
   ribbons: [{ path: 'scene.ribbons.rswing', map: (m) => lerp(0.2, 2.5, m) }],
   bloomring: [{ path: 'scene.bloomring.bspin2', map: (m) => lerp(-1, 1, m) }],
   pulsewave: [{ path: 'scene.pulsewave.pwarp', map: (m) => lerp(0, 2, m) }],
+  flame: [{ path: 'scene.flame.ftwist', map: (m) => m }],
+  newton: [{ path: 'scene.newton.nnova', map: (m) => lerp(0, 0.9, m) }],
 };
 
 const INTENSITY: Target[] = [

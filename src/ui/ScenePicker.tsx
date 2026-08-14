@@ -22,6 +22,11 @@ const THUMB_GRADIENTS: Record<string, string> = {
   juliamorph: 'radial-gradient(circle at 50% 50%, #faff00 0%, #ff00cc 25%, #00ffee 55%, #0a0014 88%)',
   infinitybox: 'conic-gradient(from 0deg at 50% 50%, #7dff00, #050a02, #eaff70, #050a02, #7dff00, #050a02, #eaff70, #050a02, #7dff00)',
   apollonian: 'radial-gradient(circle at 30% 30%, #ffe9b8 0%, #d9c8ff 18%, #b8f2d9 40%, #12082a 80%)',
+  ribbons: 'linear-gradient(105deg, #02102a 8%, #00c896 30%, #7a3fe0 52%, #8ef0d2 70%, #02102a 92%)',
+  bloomring: 'conic-gradient(from 0deg, #ff4fd8, #2b0f54 22%, #ff4fd8 45%, #2b0f54 68%, #ffb3ec 88%, #ff4fd8)',
+  pulsewave: 'repeating-radial-gradient(circle at 50% 50%, #ffb300 0 5px, #3a0a00 5px 13px)',
+  flame: 'radial-gradient(ellipse at 50% 62%, #ffe08a 0%, #ff6a00 22%, #c33000 48%, #000000 85%)',
+  newton: 'conic-gradient(from 18deg, #00c896, #7a3fe0 25%, #8ef0d2 40%, #00c896 55%, #7a3fe0 75%, #8ef0d2 90%, #00c896)',
 };
 
 export function ScenePicker() {

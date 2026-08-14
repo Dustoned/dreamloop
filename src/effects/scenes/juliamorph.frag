@@ -222,8 +222,10 @@ void main() {
     float stripeVal = mix(avg2, avg1, fract(sn));
     ts = t + u_stripes * (stripeVal - 0.5) * 0.9;
   }
+  // Guarded like the DE: an overflowed |dz|^2 would make normalize(cdiv(z,dz)) NaN.
   float relief = 1.0;
-  if (escaped && u_relief > 0.001) {
+  float rl2 = dot(dz, dz);
+  if (escaped && u_relief > 0.001 && rl2 > 1e-30 && rl2 < 1e30) {
     vec2 un = normalize(cdiv(z, dz));
     float rlang = 2.3 + u_time * 0.05;
     float refl = clamp((dot(un, vec2(cos(rlang), sin(rlang))) + 1.5) / 2.5, 0.0, 1.0);
