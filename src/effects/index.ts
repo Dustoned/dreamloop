@@ -32,6 +32,7 @@ import huecycleFrag from './post/huecycle.frag?raw';
 import finalFrag from './post/final.frag?raw';
 import kaleidoFrag from './post/kaleido.frag?raw';
 import prismFrag from './post/prism.frag?raw';
+import warpFrag from './post/warp.frag?raw';
 import pixelateFrag from './post/pixelate.frag?raw';
 import posterizeFrag from './post/posterize.frag?raw';
 import bloomBrightFrag from './post/bloom_bright.frag?raw';
@@ -442,6 +443,7 @@ export const EFFECTS: EffectDef[] = [
         ],
         default: 0,
         surprise: true,
+        activeWhen: { param: 'zmode', notEquals: 0, andParam: 'engine', andEquals: 1, because: 'the ∞ dive is pure Mandelbrot; switch Zoom Engine to Classic for the other shapes' },
       },
       {
         type: 'select',
@@ -455,6 +457,7 @@ export const EFFECTS: EffectDef[] = [
         ],
         default: 0,
         surprise: true,
+        activeWhen: { param: 'zmode', notEquals: 0, andParam: 'engine', andEquals: 1, because: 'the ∞ dive flies its own curated route; switch Zoom Engine to Classic to pick a spot' },
       },
       {
         type: 'select',
@@ -483,8 +486,8 @@ export const EFFECTS: EffectDef[] = [
       },
       { type: 'slider', id: 'zspeed', label: 'Zoom Speed', min: 0, max: 2, step: 0.01, default: 0.7, surprise: [0.3, 1.4], integrate: true, activeWhen: { param: 'zmode', notEquals: 3, because: 'set Motion away from Hold' } },
       { type: 'slider', id: 'basezoom', label: 'Start Depth', min: 0, max: 12, step: 0.05, default: 0, surprise: [0, 6] },
-      { type: 'slider', id: 'power', label: 'Power', min: 2, max: 8, step: 0.01, default: 2, surprise: [2, 5] },
-      { type: 'slider', id: 'juliamix', label: 'Julia Blend', min: 0, max: 1, step: 0.01, default: 0, surprise: [0, 1] },
+      { type: 'slider', id: 'power', label: 'Power', min: 2, max: 8, step: 0.01, default: 2, surprise: [2, 5], activeWhen: { param: 'zmode', notEquals: 0, andParam: 'engine', andEquals: 1, because: 'the ∞ dive is pure Mandelbrot (power 2); switch Zoom Engine to Classic' } },
+      { type: 'slider', id: 'juliamix', label: 'Julia Blend', min: 0, max: 1, step: 0.01, default: 0, surprise: [0, 1], activeWhen: { param: 'zmode', notEquals: 0, andParam: 'engine', andEquals: 1, because: 'the ∞ dive is pure Mandelbrot; switch Zoom Engine to Classic' } },
       { type: 'slider', id: 'iters', label: 'Detail', min: 64, max: 400, step: 1, default: 180, surprise: [120, 320], perfScale: true },
       { type: 'slider', id: 'trapmix', label: 'Colour Style', min: 0, max: 1, step: 0.01, default: 0.35, surprise: [0, 1] },
       {
@@ -782,6 +785,32 @@ export const EFFECTS: EffectDef[] = [
     ],
   },
   {
+    id: 'warp',
+    name: 'Liquid Warp',
+    kind: 'post',
+    icon: '💧',
+    frag: warpFrag,
+    cost: 1,
+    audioReact: [{ id: 'wamount', band: 'bass', amount: 0.25 }],
+    params: [
+      {
+        type: 'select',
+        id: 'wmode',
+        label: 'Mode',
+        options: [
+          { value: 0, label: 'Liquid' },
+          { value: 1, label: 'Ripple' },
+          { value: 2, label: 'Twist' },
+        ],
+        default: 0,
+        surprise: true,
+      },
+      { type: 'slider', id: 'wamount', label: 'Strength', min: 0, max: 1, step: 0.01, default: 0.45, surprise: [0.2, 0.8] },
+      { type: 'slider', id: 'wsize', label: 'Size', min: 0.3, max: 3, step: 0.01, default: 1, curve: 'exp', surprise: [0.5, 2] },
+      { type: 'slider', id: 'wflow', label: 'Flow', min: 0, max: 2, step: 0.01, default: 0.6, surprise: [0.2, 1.4], integrate: true },
+    ],
+  },
+  {
     id: 'pixelate',
     name: 'Pixelate',
     kind: 'post',
@@ -969,6 +998,7 @@ export const SCENES = EFFECTS.filter((e) => e.kind === 'scene');
 export const DEFAULT_EFFECT_ORDER = [
   'echo',
   'kaleido',
+  'warp',
   'pixelate',
   'poster',
   'prism',

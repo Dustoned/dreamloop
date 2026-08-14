@@ -124,9 +124,13 @@ export function Slider({ path, def }: { path: string; def: SliderParam }) {
   // Some sliders genuinely do nothing in certain modes (Zoom Speed while Motion
   // is on Hold). Say so instead of leaving the user dragging a dead control.
   const gate = def.activeWhen;
-  const gatePath = gate ? path.slice(0, path.lastIndexOf('.') + 1) + gate.param : '';
-  const gateValue = useParam(gatePath);
-  const inactive = !!gate && gateValue === gate.notEquals;
+  const prefix = path.slice(0, path.lastIndexOf('.') + 1);
+  const gateValue = useParam(gate ? prefix + gate.param : '');
+  const andValue = useParam(gate?.andParam ? prefix + gate.andParam : '');
+  const inactive =
+    !!gate &&
+    gateValue === gate.notEquals &&
+    (gate.andParam === undefined || andValue === gate.andEquals);
 
   // The track cannot move during a pointer-captured drag, so measure it once on
   // press instead of forcing a layout on every pointermove.

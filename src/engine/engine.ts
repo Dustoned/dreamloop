@@ -475,7 +475,10 @@ export class Engine {
     const P = Engine.INF_PERIOD;
     const LO = Engine.INF_LO;
     const N = Engine.INF_CENTERS.length;
-    const phase = this.infTravel / P;
+    // Start Depth scrubs the dive forward, so the slider works in ∞ too: dragging it
+    // jumps you that many octaves deeper into the running cycle, immediately.
+    const basez = num(st.params['scene.mandelzoom.basezoom'], 0);
+    const phase = (this.infTravel + basez) / P;
     const fA = phase - Math.floor(phase);
     const pB = phase + 0.5;
     const fB = pB - Math.floor(pB);

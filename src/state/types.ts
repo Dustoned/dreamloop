@@ -43,7 +43,21 @@ export interface SliderParam extends ParamBase {
    * Zoom Speed does nothing while Motion is on Hold, for instance. The UI dims it
    * and says why, instead of leaving you with a slider that appears broken.
    */
-  activeWhen?: { param: string; notEquals: number; because: string };
+  activeWhen?: ActiveGate;
+}
+
+/**
+ * Deactivation rule for a control: inactive when the sibling `param` equals
+ * `notEquals` — AND, if given, the sibling `andParam` equals `andEquals`. The
+ * second condition covers controls that die only in a combination of modes
+ * (Fractal Shape works everywhere except the ∞ engine's Zoom In dive).
+ */
+export interface ActiveGate {
+  param: string;
+  notEquals: number;
+  because: string;
+  andParam?: string;
+  andEquals?: number;
 }
 
 export interface ColorParam extends ParamBase {
@@ -62,6 +76,8 @@ export interface SelectParam extends ParamBase {
   options: { value: number; label: string }[];
   default: number;
   surprise?: boolean;
+  /** Same deactivation rule as sliders: dimmed, with a reason, when it does nothing. */
+  activeWhen?: ActiveGate;
 }
 
 export type ParamDef = SliderParam | ColorParam | ToggleParam | SelectParam;
