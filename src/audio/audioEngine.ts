@@ -8,7 +8,7 @@ export type AudioSourceKind = 'none' | 'file' | 'tab' | 'mic';
  * engine, zero events); source/error changes notify UI subscribers.
  */
 class AudioEngine {
-  frame: AudioFrame = { sub: 0, bass: 0, mid: 0, treble: 0, beat: 0 };
+  frame: AudioFrame = { sub: 0, bass: 0, lowmid: 0, mid: 0, highmid: 0, treble: 0, air: 0, beat: 0 };
   kind: AudioSourceKind = 'none';
   error = '';
   trackName = '';
@@ -24,7 +24,7 @@ class AudioEngine {
   private stream: MediaStream | null = null;
   private listeners = new Set<() => void>();
 
-  private sm = { sub: 0, bass: 0, mid: 0, treble: 0 };
+  private sm = { sub: 0, bass: 0, lowmid: 0, mid: 0, highmid: 0, treble: 0, air: 0 };
   /**
    * Rolling loudness window per band, for the auto-gain in bands(). getByteFrequency
    * maps -100..-30 dB onto 0..255, and ordinary music sits near the top of that
@@ -35,8 +35,11 @@ class AudioEngine {
   private gain = {
     sub: { lo: 1, hi: 0 },
     bass: { lo: 1, hi: 0 },
+    lowmid: { lo: 1, hi: 0 },
     mid: { lo: 1, hi: 0 },
+    highmid: { lo: 1, hi: 0 },
     treble: { lo: 1, hi: 0 },
+    air: { lo: 1, hi: 0 },
   };
   private beatAvg = 0;
   private beatCooldown = 0;
@@ -71,10 +74,13 @@ class AudioEngine {
     this.gain = {
       sub: { lo: 1, hi: 0 },
       bass: { lo: 1, hi: 0 },
+      lowmid: { lo: 1, hi: 0 },
       mid: { lo: 1, hi: 0 },
+      highmid: { lo: 1, hi: 0 },
       treble: { lo: 1, hi: 0 },
+      air: { lo: 1, hi: 0 },
     };
-    this.sm = { sub: 0, bass: 0, mid: 0, treble: 0 };
+    this.sm = { sub: 0, bass: 0, lowmid: 0, mid: 0, highmid: 0, treble: 0, air: 0 };
     this.beatAvg = 0;
     this.beatEnv = 0;
     this.beatCooldown = 0;
@@ -223,7 +229,8 @@ class AudioEngine {
     this.kind = 'none';
     this.trackName = '';
     this.error = '';
-    this.frame.bass = this.frame.mid = this.frame.treble = this.frame.beat = 0;
+    const fr = this.frame;
+    fr.sub = fr.bass = fr.lowmid = fr.mid = fr.highmid = fr.treble = fr.air = fr.beat = 0;
     this.resetLevels();
     this.emit();
   }
@@ -234,8 +241,11 @@ class AudioEngine {
     if (!this.analyser || this.kind === 'none') {
       f.sub *= 0.9;
       f.bass *= 0.9;
+      f.lowmid *= 0.9;
       f.mid *= 0.9;
+      f.highmid *= 0.9;
       f.treble *= 0.9;
+      f.air *= 0.9;
       f.beat *= 0.9;
       return;
     }
@@ -249,8 +259,11 @@ class AudioEngine {
     };
     const rawSub = avg(1, 6); // ~23-140 Hz: kick + bassline only
     const rawBass = avg(1, 11); // ~23-260 Hz
+    const rawLowmid = avg(11, 30); // ~260-700 Hz: warmth, body, low vocals
     const rawMid = avg(11, 86); // ~260-2000 Hz
+    const rawHighmid = avg(86, 214); // ~2-5 kHz: presence, snare crack
     const rawTreble = avg(86, 513); // ~2-12 kHz
+    const rawAir = avg(342, 683); // ~8-16 kHz: cymbal tails, sparkle
 
     const now = performance.now() / 1000;
     const dt = this.lastAt > 0 ? Math.min(0.25, Math.max(0.001, now - this.lastAt)) : 0.016;
@@ -265,12 +278,18 @@ class AudioEngine {
       cur + (raw - cur) * (raw > cur ? attack : release);
     this.sm.sub = sm(this.sm.sub, this.agc(this.gain.sub, rawSub, dt));
     this.sm.bass = sm(this.sm.bass, this.agc(this.gain.bass, rawBass, dt));
+    this.sm.lowmid = sm(this.sm.lowmid, this.agc(this.gain.lowmid, rawLowmid, dt));
     this.sm.mid = sm(this.sm.mid, this.agc(this.gain.mid, rawMid, dt));
+    this.sm.highmid = sm(this.sm.highmid, this.agc(this.gain.highmid, rawHighmid, dt));
     this.sm.treble = sm(this.sm.treble, this.agc(this.gain.treble, rawTreble, dt));
+    this.sm.air = sm(this.sm.air, this.agc(this.gain.air, rawAir, dt));
     f.sub = this.sm.sub;
     f.bass = this.sm.bass;
+    f.lowmid = this.sm.lowmid;
     f.mid = this.sm.mid;
+    f.highmid = this.sm.highmid;
     f.treble = this.sm.treble;
+    f.air = this.sm.air;
 
     // beat: a spike in SUB-bass, not the whole bass band, so a loud vocal or a
     // snare in the 150-260 Hz range no longer trips the beat. Kick drums live

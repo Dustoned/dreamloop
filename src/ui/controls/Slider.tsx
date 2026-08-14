@@ -51,10 +51,17 @@ if (typeof document !== 'undefined') {
   );
 }
 
+// Eight pickable tones, low to high: link any slider to exactly the part of the
+// music you want it to ride — just the kick, the warmth, the vocal presence, the
+// hats, or the shimmer above them.
 const BANDS: { id: AudioBand; label: string }[] = [
+  { id: 'sub', label: 'Sub' },
   { id: 'bass', label: 'Bass' },
+  { id: 'lowmid', label: 'Low Mid' },
   { id: 'mid', label: 'Mid' },
+  { id: 'highmid', label: 'High Mid' },
   { id: 'treble', label: 'Treble' },
+  { id: 'air', label: 'Air' },
   { id: 'beat', label: 'Beat' },
 ];
 

@@ -114,7 +114,15 @@ export type AudioMapping =
   | 'beatPunch'
   | 'bassWarp';
 
-export type AudioBand = 'bass' | 'mid' | 'treble' | 'beat';
+export type AudioBand =
+  | 'sub'
+  | 'bass'
+  | 'lowmid'
+  | 'mid'
+  | 'highmid'
+  | 'treble'
+  | 'air'
+  | 'beat';
 
 /** Per-slider audio link: effective = base + amt * band * (max - min). */
 export interface ParamMod {
@@ -142,11 +150,17 @@ export interface ParamState {
 
 /** Live audio analysis, written by the analyser, read by the engine each frame. */
 export interface AudioFrame {
-  /** Sub-bass only (~23-120 Hz): the kick and the bassline, not low vocals. */
+  /** Sub-bass only (~23-140 Hz): the kick and the bassline, not low vocals. */
   sub: number;
   bass: number;
+  /** ~260-700 Hz: warmth, body, low vocals. */
+  lowmid: number;
   mid: number;
+  /** ~2-5 kHz: presence — vocal edge, snare crack, lead bite. */
+  highmid: number;
   treble: number;
+  /** ~8-16 kHz: shimmer above the hats — cymbal tails, sparkle. */
+  air: number;
   /** Impulse: jumps to 1 on a detected beat, decays over ~250 ms. */
   beat: number;
 }

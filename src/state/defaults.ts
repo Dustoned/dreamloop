@@ -62,7 +62,7 @@ const MAPPINGS: AudioMapping[] = [
   'beatPunch',
   'bassWarp',
 ];
-const BANDS: AudioBand[] = ['bass', 'mid', 'treble', 'beat'];
+const BANDS: AudioBand[] = ['sub', 'bass', 'lowmid', 'mid', 'highmid', 'treble', 'air', 'beat'];
 
 /**
  * Merge an untrusted partial snapshot (preset / URL code / localStorage) over

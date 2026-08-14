@@ -61,7 +61,7 @@ export class Engine {
   private palShift = 0;
   private palSpread = 1;
   /** Written by the audio module each frame; zeros when no source is active. */
-  audio: AudioFrame = { sub: 0, bass: 0, mid: 0, treble: 0, beat: 0 };
+  audio: AudioFrame = { sub: 0, bass: 0, lowmid: 0, mid: 0, highmid: 0, treble: 0, air: 0, beat: 0 };
   /** Extra internal-resolution factor set by the auto-degrade logic (perf.ts). */
   degradeScale = 1;
   /** Whether the user has opted into automatic quality reduction at all. */
