@@ -48,6 +48,9 @@ export class Engine {
   private flameFadeProg: Program | null = null;
   /** Perturbation reference orbits (Deep Zoom ∞), computed in fp64, cached per centre. */
   private refCache = new Map<string, { tex: WebGLTexture; len: number }>();
+  /** The analyser's 128-bin spectrum (set once from main), uploaded as a texture. */
+  spectrumData: Uint8Array | null = null;
+  private spectrumTex: WebGLTexture | null = null;
   /** Real elapsed seconds this frame (unscaled), for frame-rate-independent decay. */
   private lastDt = 1 / 60;
   private readonly palette: PaletteTexture;
@@ -223,7 +226,10 @@ export class Engine {
     if (st.audio.amount <= 0) return base;
 
     // An explicit link the user made wins over the effect's built-in response.
+    // Built-in responses can be muted wholesale with the "Scene moves" chip, so the
+    // accent chips (and the user's own links) can be heard on their own.
     const mod = st.mods[path];
+    if (!mod && st.audio.mappings.includes('sceneStill')) return base;
     const band = mod ? mod.src : def.audioReact?.find((r) => r.id === id)?.band;
     if (!band) return base;
     const strength = mod ? mod.amt : (def.audioReact!.find((r) => r.id === id)!.amount);
@@ -379,6 +385,7 @@ export class Engine {
       this.setStd(sp, iw, ih);
       this.uploadParams(sp, sceneDef, st, `scene.${sceneDef.id}.`);
       sp.bindTex('u_palette', this.palette.tex, 0);
+      this.bindSpectrum(sp, 5);
       if (this.sim && sceneDef.passes === 'sim') sp.bindTex('u_prev', this.sim.read.tex, 2);
       if (sceneDef.id === 'mandelzoom') {
         // ∞ engine: two cross-fading perturbation layers for a constant-speed endless
@@ -606,6 +613,32 @@ export class Engine {
     const entry = { tex, len: n };
     this.refCache.set(key, entry);
     return entry;
+  }
+
+  /**
+   * Upload the analyser's spectrum as a 128x1 R8 texture and bind it, so scenes can
+   * draw the actual music (real spectrum-analyzer visuals, not just band numbers).
+   * LINEAR filtering gives smooth bars for free when the shader samples between bins.
+   */
+  private bindSpectrum(p: Program, unit: number): void {
+    const gl = this.glc.gl;
+    if (!this.spectrumTex) {
+      this.spectrumTex = gl.createTexture();
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, this.spectrumTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 128, 1, 0, gl.RED, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    }
+    gl.activeTexture(gl.TEXTURE0 + unit);
+    gl.bindTexture(gl.TEXTURE_2D, this.spectrumTex);
+    if (this.spectrumData) {
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 128, 1, gl.RED, gl.UNSIGNED_BYTE, this.spectrumData);
+    }
+    p.set1i('u_spectrum', unit);
   }
 
   /**

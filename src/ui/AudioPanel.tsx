@@ -9,36 +9,37 @@ function useAudio(): void {
   useEffect(() => audio.subscribe(() => force()), []);
 }
 
-/** Three tiny bars + a beat dot — live proof that the audio is being heard. */
+const METER_BANDS = ['sub', 'bass', 'lowmid', 'mid', 'highmid', 'treble', 'air'] as const;
+
+/** Seven tiny bars (one per linkable tone, low to high) + a beat dot — live proof
+ *  that the audio is being heard, and of which tones are alive right now. */
 export function LevelMeter() {
-  const [levels, setLevels] = useState({ bass: 0, mid: 0, treble: 0, beat: 0 });
+  const [levels, setLevels] = useState<number[]>(() => METER_BANDS.map(() => 0));
+  const [beat, setBeat] = useState(0);
   useEffect(() => {
     let prev = '';
     const t = setInterval(() => {
       const f = audio.frame;
       // Round first and skip the update when nothing visibly moved, so a silent
       // track does not keep re-rendering the panel.
-      const next = {
-        bass: Math.round(f.bass * 20) / 20,
-        mid: Math.round(f.mid * 20) / 20,
-        treble: Math.round(f.treble * 20) / 20,
-        beat: f.beat > 0.5 ? 1 : 0,
-      };
-      const key = `${next.bass},${next.mid},${next.treble},${next.beat}`;
+      const next = METER_BANDS.map((b) => Math.round(f[b] * 20) / 20);
+      const nextBeat = f.beat > 0.5 ? 1 : 0;
+      const key = next.join(',') + ',' + nextBeat;
       if (key === prev) return;
       prev = key;
       setLevels(next);
+      setBeat(nextBeat);
     }, 80);
     return () => clearInterval(t);
   }, []);
   // scaleY stays on the compositor; animating height would dirty layout every tick.
   const bar = (v: number) => ({ transform: `scaleY(${0.2 + v * 0.8})` });
   return (
-    <span class="level-meter" title="Bass / Mid / Treble">
-      <span class="lvl" style={bar(levels.bass)} />
-      <span class="lvl" style={bar(levels.mid)} />
-      <span class="lvl" style={bar(levels.treble)} />
-      <span class={`beat-dot ${levels.beat ? 'hit' : ''}`} />
+    <span class="level-meter" title="Sub / Bass / Low Mid / Mid / High Mid / Treble / Air">
+      {levels.map((v, i) => (
+        <span key={METER_BANDS[i]} class="lvl" style={bar(v)} />
+      ))}
+      <span class={`beat-dot ${beat ? 'hit' : ''}`} />
     </span>
   );
 }
@@ -55,8 +56,26 @@ function MappingChips() {
     { id: 'beatPunch', label: 'Beat → punch' },
     { id: 'bassWarp', label: 'Bass → warp' },
   ];
+  // Inverted chip: active = 'sceneStill' NOT stored, so saves that predate the chip
+  // keep their scenes reacting. Turning it off mutes every built-in scene reaction,
+  // leaving only the accent chips and the user's own slider links — which makes each
+  // one clearly audible on its own.
+  const sceneMoves = !mappings.includes('sceneStill');
   return (
     <div class="mapping-chips">
+      <button
+        class={`chip ${sceneMoves ? 'active' : ''}`}
+        title="The scene's own built-in reaction to the music"
+        onClick={() =>
+          store.mutate((s) => {
+            s.audio.mappings = sceneMoves
+              ? [...s.audio.mappings, 'sceneStill']
+              : s.audio.mappings.filter((m) => m !== 'sceneStill');
+          })
+        }
+      >
+        Scene → moves
+      </button>
       {CHIPS.map((c) => (
         <button
           key={c.id}

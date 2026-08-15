@@ -112,7 +112,13 @@ export type AudioMapping =
   | 'midSway'
   | 'beatColour'
   | 'beatPunch'
-  | 'bassWarp';
+  | 'bassWarp'
+  /**
+   * Inverted chip: when PRESENT, the scenes' built-in audio reactions are muted, so
+   * only the accent chips (and the user's own slider links) respond to the music.
+   * Stored inverted so old saves — which predate the chip — keep reacting.
+   */
+  | 'sceneStill';
 
 export type AudioBand =
   | 'sub'

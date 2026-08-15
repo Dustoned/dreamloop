@@ -61,6 +61,7 @@ const MAPPINGS: AudioMapping[] = [
   'beatColour',
   'beatPunch',
   'bassWarp',
+  'sceneStill',
 ];
 const BANDS: AudioBand[] = ['sub', 'bass', 'lowmid', 'mid', 'highmid', 'treble', 'air', 'beat'];
 

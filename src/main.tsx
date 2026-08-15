@@ -139,6 +139,7 @@ if (glc) {
     setTimeout(once, 40);
   };
   engine.audio = audio.frame;
+  engine.spectrumData = audio.spectrum;
   const perf = perfMonitor;
   let lastFrame = 0;
   let toldUser = false;

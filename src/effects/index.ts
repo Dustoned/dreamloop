@@ -23,6 +23,7 @@ import apollonianFrag from './scenes/apollonian.frag?raw';
 import ribbonsFrag from './scenes/ribbons.frag?raw';
 import bloomringFrag from './scenes/bloomring.frag?raw';
 import pulsewaveFrag from './scenes/pulsewave.frag?raw';
+import spectrumFrag from './scenes/spectrum.frag?raw';
 import flameSplatVert from './scenes/flame_splat.vert?raw';
 import flameSplatFrag from './scenes/flame_splat.frag?raw';
 import flameFadeFrag from './scenes/flame_fade.frag?raw';
@@ -195,6 +196,35 @@ export const EFFECTS: EffectDef[] = [
       { type: 'slider', id: 'pthick', label: 'Thickness', min: 0.3, max: 3, step: 0.01, default: 1, surprise: [0.5, 2] },
       { type: 'slider', id: 'pwarp', label: 'Warp', min: 0, max: 2, step: 0.01, default: 0.7, surprise: [0.2, 1.6] },
       { type: 'slider', id: 'pglow', label: 'Glow', min: 0, max: 1, step: 0.01, default: 0.55, surprise: [0.2, 0.9] },
+    ],
+  },
+  {
+    id: 'spectrum',
+    name: 'Spectrum Ring',
+    kind: 'scene',
+    icon: '🎛️',
+    frag: spectrumFrag,
+    cost: 1,
+    audioReact: [{ id: 'sglow', band: 'bass', amount: 0.4 }, { id: 'srot', band: 'beat', amount: 0.3 }],
+    params: [
+      {
+        type: 'select',
+        id: 'smode',
+        label: 'Shape',
+        options: [
+          { value: 0, label: 'Ring' },
+          { value: 1, label: 'Wave' },
+          { value: 2, label: 'Tunnel' },
+        ],
+        default: 0,
+        surprise: true,
+      },
+      { type: 'slider', id: 'smirror', label: 'Mirrors', min: 1, max: 6, step: 1, default: 2, surprise: [1, 4] },
+      { type: 'slider', id: 'sbase', label: 'Ring Size', min: 0.1, max: 0.5, step: 0.01, default: 0.28, surprise: [0.15, 0.4] },
+      { type: 'slider', id: 'sheight', label: 'Bar Height', min: 0.2, max: 2, step: 0.01, default: 1, surprise: [0.5, 1.6] },
+      { type: 'slider', id: 'srot', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0.15, surprise: [-0.6, 0.6], integrate: true },
+      { type: 'slider', id: 'ssharp', label: 'Sharpness', min: 0.2, max: 2, step: 0.01, default: 1, surprise: [0.5, 1.6] },
+      { type: 'slider', id: 'sglow', label: 'Glow', min: 0, max: 1, step: 0.01, default: 0.6, surprise: [0.3, 0.9] },
     ],
   },
   {

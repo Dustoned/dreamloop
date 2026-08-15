@@ -24,7 +24,7 @@ void main() {
   // Bass pulse: a push toward the centre on the sub-bass. The engine's master curve
   // keeps low Audio Reactivity gentle; this multiplier sets the ceiling. Beat Zoom
   // Punch (u_audioFx2.z) adds a sharper outward kick on the beat.
-  uv = 0.5 + (uv - 0.5) * (1.0 - u_audioFx.x * 0.05 + u_audioFx2.z * 0.10);
+  uv = 0.5 + (uv - 0.5) * (1.0 - u_audioFx.x * 0.07 + u_audioFx2.z * 0.14);
 
   // Mid sway: a slow whole-frame roll on the mids. Tiny angle; it reads as the
   // image leaning with the music rather than spinning.

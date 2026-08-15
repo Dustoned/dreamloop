@@ -23,6 +23,7 @@ uniform float u_lodScale;  // 0..1 Shader Detail; scene params are u_<paramId>
 uniform sampler2D u_palette;
 uniform sampler2D u_src;
 uniform sampler2D u_prev;
+uniform sampler2D u_spectrum; // 128x1 log-spaced spectrum, r channel 0..1
 in vec2 v_uv;
 out vec4 fragColor;
 `;

@@ -9,6 +9,12 @@ export type AudioSourceKind = 'none' | 'file' | 'tab' | 'mic';
  */
 class AudioEngine {
   frame: AudioFrame = { sub: 0, bass: 0, lowmid: 0, mid: 0, highmid: 0, treble: 0, air: 0, beat: 0 };
+  /**
+   * 128-bin log-spaced spectrum (0..255), refreshed every update() while a source
+   * plays. The engine uploads it as a 128x1 texture, so scenes can draw the actual
+   * music — real spectrum-analyzer visuals, not just four numbers.
+   */
+  spectrum = new Uint8Array(128);
   kind: AudioSourceKind = 'none';
   error = '';
   trackName = '';
@@ -247,6 +253,9 @@ class AudioEngine {
       f.treble *= 0.9;
       f.air *= 0.9;
       f.beat *= 0.9;
+      for (let i = 0; i < this.spectrum.length; i++) {
+        this.spectrum[i] = (this.spectrum[i] * 0.9) | 0; // fade the bars out
+      }
       return;
     }
     const d = this.freqData!;
@@ -303,6 +312,20 @@ class AudioEngine {
     }
     this.beatEnv *= Math.exp(-dt / 0.29); // decays over ~0.3 s
     f.beat = this.beatEnv;
+
+    // Log-spaced 128-bin spectrum (~30 Hz to ~14 kHz): equal musical weight per bar,
+    // where a linear mapping would spend 80% of the bars on inaudible highs. Peak of
+    // the covered source bins, with a gentle per-frame fall so bars drop smoothly.
+    const N = this.spectrum.length;
+    const fall = Math.exp(-dt / 0.09) * 255;
+    for (let i = 0; i < N; i++) {
+      const a = Math.round(Math.pow(600, i / N) * 1.3);
+      const b = Math.max(a + 1, Math.round(Math.pow(600, (i + 1) / N) * 1.3));
+      let peak = 0;
+      for (let j = a; j < b && j < d.length; j++) if (d[j] > peak) peak = d[j];
+      const cur = this.spectrum[i];
+      this.spectrum[i] = peak >= cur ? peak : Math.max(peak, (cur * fall) / 255) | 0;
+    }
   }
 }
 
