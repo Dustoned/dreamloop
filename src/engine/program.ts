@@ -24,6 +24,7 @@ uniform sampler2D u_palette;
 uniform sampler2D u_src;
 uniform sampler2D u_prev;
 uniform sampler2D u_spectrum; // 128x1 log-spaced spectrum, r channel 0..1
+uniform sampler2D u_waveform; // 256x1 raw waveform slice, r channel (0.5 = silence)
 in vec2 v_uv;
 out vec4 fragColor;
 `;

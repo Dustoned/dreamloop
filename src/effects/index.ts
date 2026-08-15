@@ -24,6 +24,7 @@ import ribbonsFrag from './scenes/ribbons.frag?raw';
 import bloomringFrag from './scenes/bloomring.frag?raw';
 import pulsewaveFrag from './scenes/pulsewave.frag?raw';
 import spectrumFrag from './scenes/spectrum.frag?raw';
+import oscilloscopeFrag from './scenes/oscilloscope.frag?raw';
 import flameSplatVert from './scenes/flame_splat.vert?raw';
 import flameSplatFrag from './scenes/flame_splat.frag?raw';
 import flameFadeFrag from './scenes/flame_fade.frag?raw';
@@ -225,6 +226,34 @@ export const EFFECTS: EffectDef[] = [
       { type: 'slider', id: 'srot', label: 'Spin', min: -1, max: 1, step: 0.01, default: 0.15, surprise: [-0.6, 0.6], integrate: true },
       { type: 'slider', id: 'ssharp', label: 'Sharpness', min: 0.2, max: 2, step: 0.01, default: 1, surprise: [0.5, 1.6] },
       { type: 'slider', id: 'sglow', label: 'Glow', min: 0, max: 1, step: 0.01, default: 0.6, surprise: [0.3, 0.9] },
+    ],
+  },
+  {
+    id: 'oscillo',
+    name: 'Oscilloscope',
+    kind: 'scene',
+    icon: '📈',
+    frag: oscilloscopeFrag,
+    cost: 1,
+    audioReact: [{ id: 'oglow', band: 'bass', amount: 0.4 }, { id: 'ospin', band: 'beat', amount: 0.3 }],
+    params: [
+      {
+        type: 'select',
+        id: 'omode',
+        label: 'Shape',
+        options: [
+          { value: 0, label: 'Line' },
+          { value: 1, label: 'Ring' },
+          { value: 2, label: 'Mirror' },
+        ],
+        default: 0,
+        surprise: true,
+      },
+      { type: 'slider', id: 'oamp', label: 'Amplitude', min: 0.2, max: 2, step: 0.01, default: 1, surprise: [0.5, 1.6] },
+      { type: 'slider', id: 'othick', label: 'Thickness', min: 0.2, max: 3, step: 0.01, default: 1, surprise: [0.5, 2] },
+      { type: 'slider', id: 'oglow', label: 'Glow', min: 0, max: 1, step: 0.01, default: 0.55, surprise: [0.3, 0.9] },
+      { type: 'slider', id: 'olayers', label: 'Ghosts', min: 1, max: 5, step: 1, default: 3, surprise: [1, 5] },
+      { type: 'slider', id: 'ospin', label: 'Drift', min: -1, max: 1, step: 0.01, default: 0.2, surprise: [-0.6, 0.6], integrate: true },
     ],
   },
   {

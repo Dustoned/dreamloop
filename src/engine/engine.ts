@@ -51,6 +51,9 @@ export class Engine {
   /** The analyser's 128-bin spectrum (set once from main), uploaded as a texture. */
   spectrumData: Uint8Array | null = null;
   private spectrumTex: WebGLTexture | null = null;
+  /** The analyser's 256-sample waveform slice, uploaded the same way. */
+  waveformData: Uint8Array | null = null;
+  private waveformTex: WebGLTexture | null = null;
   /** Real elapsed seconds this frame (unscaled), for frame-rate-independent decay. */
   private lastDt = 1 / 60;
   private readonly palette: PaletteTexture;
@@ -386,6 +389,7 @@ export class Engine {
       this.uploadParams(sp, sceneDef, st, `scene.${sceneDef.id}.`);
       sp.bindTex('u_palette', this.palette.tex, 0);
       this.bindSpectrum(sp, 5);
+      this.bindWaveform(sp, 6);
       if (this.sim && sceneDef.passes === 'sim') sp.bindTex('u_prev', this.sim.read.tex, 2);
       if (sceneDef.id === 'mandelzoom') {
         // ∞ engine: two cross-fading perturbation layers for a constant-speed endless
@@ -639,6 +643,28 @@ export class Engine {
       gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 128, 1, gl.RED, gl.UNSIGNED_BYTE, this.spectrumData);
     }
     p.set1i('u_spectrum', unit);
+  }
+
+  /** Same as bindSpectrum, for the 256-sample oscilloscope waveform. */
+  private bindWaveform(p: Program, unit: number): void {
+    const gl = this.glc.gl;
+    if (!this.waveformTex) {
+      this.waveformTex = gl.createTexture();
+      gl.activeTexture(gl.TEXTURE0 + unit);
+      gl.bindTexture(gl.TEXTURE_2D, this.waveformTex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.R8, 256, 1, 0, gl.RED, gl.UNSIGNED_BYTE, null);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    }
+    gl.activeTexture(gl.TEXTURE0 + unit);
+    gl.bindTexture(gl.TEXTURE_2D, this.waveformTex);
+    if (this.waveformData) {
+      gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+      gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.RED, gl.UNSIGNED_BYTE, this.waveformData);
+    }
+    p.set1i('u_waveform', unit);
   }
 
   /**

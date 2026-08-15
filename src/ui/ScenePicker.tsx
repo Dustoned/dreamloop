@@ -28,6 +28,7 @@ const THUMB_GRADIENTS: Record<string, string> = {
   flame: 'radial-gradient(ellipse at 50% 62%, #ffe08a 0%, #ff6a00 22%, #c33000 48%, #000000 85%)',
   newton: 'conic-gradient(from 18deg, #00c896, #7a3fe0 25%, #8ef0d2 40%, #00c896 55%, #7a3fe0 75%, #8ef0d2 90%, #00c896)',
   spectrum: 'repeating-linear-gradient(90deg, #ff00cc 0 3px, #0a0014 3px 6px, #00ffee 6px 9px, #0a0014 9px 12px), linear-gradient(0deg, #faff00, #0a0014 70%)',
+  oscillo: 'radial-gradient(ellipse at 50% 50%, #00ffa2 0%, #05000f 4%, transparent 5%), repeating-linear-gradient(0deg, #05000f 0 44%, #00ffa2 47% 53%, #05000f 56% 100%)',
 };
 
 export function ScenePicker() {

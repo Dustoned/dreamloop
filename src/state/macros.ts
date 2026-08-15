@@ -72,6 +72,7 @@ const SCENE_COMPLEXITY: Record<string, Target[]> = {
     { path: 'scene.newton.niters', map: (m) => Math.round(lerp(14, 60, m)) },
   ],
   spectrum: [{ path: 'scene.spectrum.smirror', map: (m) => Math.round(lerp(1, 6, m)) }],
+  oscillo: [{ path: 'scene.oscillo.olayers', map: (m) => Math.round(lerp(1, 5, m)) }],
 };
 
 /** Zoom / depth per scene — the "get closer" control. */
@@ -100,6 +101,7 @@ const SCENE_ZOOM: Record<string, Target[]> = {
   flame: [{ path: 'scene.flame.fzoom', map: (m) => lerp(0.5, 2.0, m) }],
   newton: [{ path: 'scene.newton.nzoom', map: (m) => lerp(0.4, 2.4, m) }],
   spectrum: [{ path: 'scene.spectrum.sbase', map: (m) => lerp(0.45, 0.15, m) }],
+  oscillo: [{ path: 'scene.oscillo.oamp', map: (m) => lerp(0.4, 1.9, m) }],
 };
 
 /** Warp / twist — the "bend reality" control. */
@@ -128,6 +130,7 @@ const SCENE_WARP: Record<string, Target[]> = {
   flame: [{ path: 'scene.flame.ftwist', map: (m) => m }],
   newton: [{ path: 'scene.newton.nnova', map: (m) => lerp(0, 0.9, m) }],
   spectrum: [{ path: 'scene.spectrum.srot', map: (m) => lerp(-1, 1, m) }],
+  oscillo: [{ path: 'scene.oscillo.ospin', map: (m) => lerp(-1, 1, m) }],
 };
 
 const INTENSITY: Target[] = [

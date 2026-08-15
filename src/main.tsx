@@ -140,6 +140,7 @@ if (glc) {
   };
   engine.audio = audio.frame;
   engine.spectrumData = audio.spectrum;
+  engine.waveformData = audio.waveform;
   const perf = perfMonitor;
   let lastFrame = 0;
   let toldUser = false;

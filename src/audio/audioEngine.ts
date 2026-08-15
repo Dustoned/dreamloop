@@ -15,6 +15,12 @@ class AudioEngine {
    * music — real spectrum-analyzer visuals, not just four numbers.
    */
   spectrum = new Uint8Array(128);
+  /**
+   * 256-sample slice of the raw waveform (0..255, silence = 128), refreshed every
+   * update(). Uploaded as a texture so scenes can draw the actual wave — the
+   * classic oscilloscope line.
+   */
+  waveform = new Uint8Array(256);
   kind: AudioSourceKind = 'none';
   error = '';
   trackName = '';
@@ -25,6 +31,7 @@ class AudioEngine {
   private ctx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private freqData: Uint8Array<ArrayBuffer> | null = null;
+  private timeData: Uint8Array<ArrayBuffer> | null = null;
   private sourceNode: AudioNode | null = null;
   private fileNode: MediaElementAudioSourceNode | null = null;
   private stream: MediaStream | null = null;
@@ -113,6 +120,7 @@ class AudioEngine {
       this.analyser.fftSize = 2048;
       this.analyser.smoothingTimeConstant = 0.4;
       this.freqData = new Uint8Array(this.analyser.frequencyBinCount);
+      this.timeData = new Uint8Array(this.analyser.fftSize);
       this.recordTap = this.ctx.createMediaStreamDestination();
     }
     void this.ctx.resume();
@@ -256,6 +264,9 @@ class AudioEngine {
       for (let i = 0; i < this.spectrum.length; i++) {
         this.spectrum[i] = (this.spectrum[i] * 0.9) | 0; // fade the bars out
       }
+      for (let i = 0; i < this.waveform.length; i++) {
+        this.waveform[i] = (128 + (this.waveform[i] - 128) * 0.9) | 0; // flatten the wave
+      }
       return;
     }
     const d = this.freqData!;
@@ -325,6 +336,17 @@ class AudioEngine {
       for (let j = a; j < b && j < d.length; j++) if (d[j] > peak) peak = d[j];
       const cur = this.spectrum[i];
       this.spectrum[i] = peak >= cur ? peak : Math.max(peak, (cur * fall) / 255) | 0;
+    }
+
+    // Raw waveform slice for the oscilloscope: downsample 2048 -> 256 with a light
+    // 2-tap average so the line stays smooth instead of aliasing.
+    const td = this.timeData!;
+    this.analyser.getByteTimeDomainData(td);
+    const W = this.waveform.length;
+    const stride = td.length / W;
+    for (let i = 0; i < W; i++) {
+      const j = (i * stride) | 0;
+      this.waveform[i] = (td[j] + td[Math.min(j + 4, td.length - 1)]) >> 1;
     }
   }
 }
