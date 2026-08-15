@@ -1,6 +1,7 @@
-import { useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useReducer, useRef, useState } from 'preact/hooks';
 import { T } from '../i18n/en';
 import { requestPhoto } from '../capture/screenshot';
+import { recorder } from '../capture/recorder';
 import { party } from '../party/partyMode';
 import { TABS, loadTab, saveTab, type TabId } from './tabs';
 import { LookTab } from './tabs/LookTab';
@@ -17,6 +18,13 @@ export function Panel() {
   const [tab, setTab] = useState<TabId>(loadTab);
   const [collapsed, setCollapsed] = useState(false);
   const sheet = useSheet();
+  // Re-render on recorder state changes so the Record button shows the live state.
+  const [, forceRec] = useReducer<number, void>((c) => c + 1, 0);
+  useEffect(() => recorder.subscribe(() => forceRec()), []);
+  const recToggle = () => {
+    const canvas = document.getElementById('gl') as HTMLCanvasElement | null;
+    if (canvas) recorder.toggle(canvas);
+  };
 
   // Where each tab was scrolled to. Switching tabs remounts the body, so without
   // this you were thrown back to the top of a long tab every time you came back.
@@ -111,6 +119,14 @@ export function Panel() {
           <button onClick={requestPhoto} title="Save a photo (S)">
             <span class="action-icon">📷</span>
             {T.photo}
+          </button>
+          <button
+            class={recorder.recording ? 'recording' : ''}
+            onClick={recToggle}
+            title={recorder.recording ? 'Stop and save the video' : 'Record a video (with the music)'}
+          >
+            <span class="action-icon">{recorder.recording ? '⏹' : '⏺'}</span>
+            {recorder.recording ? 'Stop' : 'Record'}
           </button>
           <button onClick={openShareDialog} title="Share this look">
             <span class="action-icon">🔗</span>
