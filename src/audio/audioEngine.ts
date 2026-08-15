@@ -156,7 +156,6 @@ class AudioEngine {
   async useFile(file: File): Promise<void> {
     try {
       const ctx = this.ensureCtx();
-      this.stopStream();
       if (!this.audioEl) {
         this.audioEl = new Audio();
         this.audioEl.loop = true;
@@ -165,9 +164,13 @@ class AudioEngine {
       }
       if (this.audioEl.src) URL.revokeObjectURL(this.audioEl.src);
       this.audioEl.src = URL.createObjectURL(file);
+      // Prove the file plays BEFORE tearing down the current source — an
+      // undecodable file used to kill a live mic/tab stream and then leave the UI
+      // claiming it was still active.
+      await this.audioEl.play();
+      this.stopStream();
       this.connect(this.fileNode!, true);
       this.resetLevels();
-      await this.audioEl.play();
       this.kind = 'file';
       this.trackName = file.name;
       this.error = '';

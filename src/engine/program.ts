@@ -14,7 +14,7 @@ uniform float u_time;
 uniform vec2 u_res;
 uniform vec2 u_texel;
 uniform float u_frame;
-uniform vec4 u_audio;      // bass, mid, treble, beat (0..1), unscaled
+uniform vec4 u_audio;      // bass, mid, treble, beat — pre-scaled by the master drive curve; 0 when Scene-moves is off
 uniform float u_audioAmt;  // master Audio Reactivity, 0..1
 uniform vec3 u_audioFx2;   // extra whole-frame accents: sway, colour-kick, spare
 uniform float u_palShift;  // global Colour Speed scroll, applied inside pal()

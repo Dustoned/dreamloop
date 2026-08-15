@@ -18,11 +18,14 @@ uniform float u_pdrive;
 // at both ends of its life, so nothing ever pops.
 void main() {
   vec2 p = ctr(v_uv);
-  float amt = clamp(u_audioAmt, 0.0, 1.0);
+  // u_audio already carries the master drive curve (and Scene-moves gating), so
+  // only a presence GATE belongs here — multiplying by the raw slider again made
+  // these music-first scenes the weakest responders in the app (amt x drive(amt)).
+  float amt = clamp(u_audioAmt * 4.0, 0.0, 1.0);
   float bass = mix(0.18, u_audio.x, amt);
   float mid = mix(0.15, u_audio.y, amt);
   float treb = mix(0.12, u_audio.z, amt);
-  float beat = u_audio.w * amt;
+  float beat = u_audio.w * step(0.001, amt);
 
   // Warp the plane so the rings are organic rather than perfect circles.
   float wob = u_pwarp * (0.14 + mid * 0.5 * u_pdrive);

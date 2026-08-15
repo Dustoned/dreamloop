@@ -17,11 +17,14 @@ uniform float u_bdrive;
 // function of the integrated phase.
 void main() {
   vec2 p = ctr(v_uv);
-  float amt = clamp(u_audioAmt, 0.0, 1.0);
+  // u_audio already carries the master drive curve (and Scene-moves gating), so
+  // only a presence GATE belongs here — multiplying by the raw slider again made
+  // these music-first scenes the weakest responders in the app (amt x drive(amt)).
+  float amt = clamp(u_audioAmt * 4.0, 0.0, 1.0);
   float bass = mix(0.20, u_audio.x, amt);
   float mid = mix(0.16, u_audio.y, amt);
   float treb = mix(0.12, u_audio.z, amt);
-  float beat = u_audio.w * amt;
+  float beat = u_audio.w * step(0.001, amt);
 
   float r = length(p);
   float a = atan(p.y, p.x) + u_bspin2Phase * 0.35;

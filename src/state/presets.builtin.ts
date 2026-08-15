@@ -419,7 +419,7 @@ export const BUILTIN_PRESETS: BuiltinPreset[] = [
       effects: fx({ echo: true, glow: true }),
       params: {
         'scene.spectrum.smode': 0,
-        'scene.spectrum.smirror': 3,
+        'scene.spectrum.smirror': 4,
         'scene.spectrum.sheight': 1.2,
         'scene.spectrum.srot': 0.25,
         'scene.spectrum.sglow': 0.75,

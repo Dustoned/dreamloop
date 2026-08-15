@@ -34,6 +34,10 @@ float foldT(float a, float m) {
 void main() {
   vec2 p = rot2(u_srotPhase * 0.35) * ctr(v_uv);
   float m = max(1.0, floor(u_smirror + 0.5));
+  // Ring and Tunnel wrap around the circle, where an ODD mirror count can never
+  // close seamlessly (the triangle fold ends mid-slope at the wrap) — round those
+  // modes up to the next even count. Wave never wraps, so it keeps odd counts.
+  if (u_smode < 0.5 || u_smode > 1.5) m = 2.0 * ceil(m * 0.5);
   float drift = u_time * 0.02;
   float aud = 1.0 + u_audio.x * 0.5;
   vec3 col = vec3(0.0);

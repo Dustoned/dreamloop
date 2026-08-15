@@ -17,13 +17,16 @@ uniform float u_rdrive;
 // band rather than a wall of detail.
 void main() {
   vec2 p = ctr(v_uv);
-  float amt = clamp(u_audioAmt, 0.0, 1.0);
+  // u_audio already carries the master drive curve (and Scene-moves gating), so
+  // only a presence GATE belongs here — multiplying by the raw slider again made
+  // these music-first scenes the weakest responders in the app (amt x drive(amt)).
+  float amt = clamp(u_audioAmt * 4.0, 0.0, 1.0);
 
   // Bands, low to high. mix() keeps a little life when the music is silent.
   float bass = mix(0.22, u_audio.x, amt);
   float mid = mix(0.18, u_audio.y, amt);
   float treb = mix(0.14, u_audio.z, amt);
-  float beat = u_audio.w * amt;
+  float beat = u_audio.w * step(0.001, amt);
 
   int n = int(clamp(u_rbands, 2.0, 9.0));
   float acc = 0.0;

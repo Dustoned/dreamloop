@@ -48,7 +48,10 @@ void main() {
     } else if (u_omode < 1.5) {
       // Ring: the wave wraps around a circle
       float ang = fract(atan(p.y, p.x) / TAU + 0.5 + u_ospinPhase * 0.05);
-      float t = mirrorT(ang) + off;
+      // Offset BEFORE the fold: folding first pushed ghost layers past 1.0 near the
+      // apex, where fract() snapped to the unrelated first sample — a hard radius
+      // step on every ghost ring. A shifted angle folds seamlessly for any offset.
+      float t = mirrorT(ang + off);
       float rTarget = 0.3 + wv(t) * 0.15 * u_oamp;
       d = abs(length(p) - rTarget);
       huePos = ang;

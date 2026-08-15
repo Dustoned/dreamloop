@@ -31,20 +31,27 @@ let applyDevicePerf: (() => void) | null = null;
 let pendingDevicePerf = false;
 
 const hashCode = codeFromHash();
-if (hashCode) {
-  void decodeCode(hashCode).then((st) => {
-    if (st) store.applySnapshot(st);
-    // The snapshot's perf keys are defaults (1 / off); overwrite them with values
-    // suited to this device, whether or not glc has finished initialising yet.
-    if (applyDevicePerf) applyDevicePerf();
-    else pendingDevicePerf = true;
-  });
-} else {
+{
+  // ALWAYS restore the visitor's own session first — a share link then applies as
+  // a LOOK on top of it, so the receiver keeps their perf, Shader Detail and audio
+  // preferences. Applying the code as a raw snapshot used to clobber all of those
+  // (and the 3s autosave then made the loss permanent).
   const sess = loadSession();
   if (sess) {
     store.applySnapshot(hydrate(sess));
     isSessionRestore = true;
   }
+}
+if (hashCode) {
+  void decodeCode(hashCode).then((st) => {
+    if (st) store.applyLook(st);
+    // Fresh visitors (no session) still need device-appropriate perf settings,
+    // whether or not glc has finished initialising yet.
+    if (!isSessionRestore) {
+      if (applyDevicePerf) applyDevicePerf();
+      else pendingDevicePerf = true;
+    }
+  });
 }
 
 // Debounced session autosave: your own creation greets you on the next visit.
