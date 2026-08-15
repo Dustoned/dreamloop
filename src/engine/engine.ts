@@ -250,7 +250,16 @@ export class Engine {
     p.set2f('u_texel', 1 / w, 1 / h);
     p.set1f('u_frame', this.frameIdx);
     const a = this.audio;
-    p.set4f('u_audio', a.bass, a.mid, a.treble, a.beat);
+    // Scenes read u_audio directly for glow accents, which used to bypass both the
+    // master Audio Reactivity slider AND the "Scene moves" chip — the visuals kept
+    // riding the music with everything switched off. Scale it here so those paths
+    // obey the same controls as everything else: master at 0 (or Scene moves off)
+    // means genuinely, measurably still.
+    const st2 = this.getState();
+    const k = st2.audio.mappings.includes('sceneStill')
+      ? 0
+      : Math.min(this.drive(st2), 1.5);
+    p.set4f('u_audio', a.bass * k, a.mid * k, a.treble * k, a.beat * k);
     p.set1f('u_audioAmt', this.getState().audio.amount);
     p.set1f('u_palShift', this.palShift);
     p.set1f('u_palSpread', this.palSpread);

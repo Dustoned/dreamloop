@@ -13,7 +13,9 @@ uniform float u_ospinPhase; // integral of u_ospin: rate, not rescaled history
 
 /** Waveform sample mapped to -1..1, with a tiny idle breath so silence still lives. */
 float wv(float t) {
-  float w = (texture(u_waveform, vec2(clamp(fract(t), 0.004, 0.996), 0.5)).r - 0.5) * 2.0;
+  // Master Audio Reactivity at 0 flattens the trace to its idle breath.
+  float w = (texture(u_waveform, vec2(clamp(fract(t), 0.004, 0.996), 0.5)).r - 0.5) * 2.0
+          * clamp(u_audioAmt * 3.0, 0.0, 1.0);
   w += 0.055 * sin(fract(t) * TAU * 2.0 + u_time * 1.6);
   return w;
 }

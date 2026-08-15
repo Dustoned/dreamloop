@@ -16,7 +16,9 @@ uniform float u_sglow;     // glow strength
  *  renders a dead flat ring — it hums along quietly until the music returns. */
 float spec(float t) {
   t = clamp(t, 0.004, 0.996);
-  float s = texture(u_spectrum, vec2(t, 0.5)).r;
+  // The master Audio Reactivity slider is the app-wide off switch: at 0 the bars
+  // flatten to the idle breath instead of still riding the music.
+  float s = texture(u_spectrum, vec2(t, 0.5)).r * clamp(u_audioAmt * 3.0, 0.0, 1.0);
   s = pow(s, 1.35);
   float idle = 0.06 + 0.05 * sin(t * 19.0 + u_time * 1.1) + 0.03 * sin(t * 43.0 - u_time * 0.6);
   return max(s, idle);
